@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+
+/* Tailwind v4 theme tokens */
+@theme {
+
+  --color-background: hsl(210 20% 98%);
+  --color-foreground: hsl(215 25% 15%);
+
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(215 25% 15%);
+
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(215 25% 15%);
+
+  --color-primary: hsl(210 90% 45%);
+  --color-primary-foreground: hsl(0 0% 100%);
+
+  --color-secondary: hsl(210 30% 95%);
+  --color-secondary-foreground: hsl(210 90% 35%);
+
+  --color-muted: hsl(210 20% 96%);
+  --color-muted-foreground: hsl(215 15% 50%);
+
+  --color-accent: hsl(175 60% 42%);
+  --color-accent-foreground: hsl(0 0% 100%);
+
+  --color-destructive: hsl(0 72% 55%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+
+  --color-border: hsl(210 20% 90%);
+  --color-input: hsl(210 20% 90%);
+  --color-ring: hsl(210 90% 45%);
+
+  --radius: 0.75rem;
+
+  /* medical colors */
+
+  --color-medical-blue: hsl(210 90% 45%);
+  --color-medical-blue-light: hsl(210 80% 95%);
+
+  --color-medical-teal: hsl(175 60% 42%);
+  --color-medical-teal-light: hsl(175 50% 94%);
+
+  --color-medical-coral: hsl(4 80% 62%);
+  --color-medical-coral-light: hsl(4 70% 95%);
+
+  --color-medical-amber: hsl(38 92% 55%);
+  --color-medical-amber-light: hsl(38 80% 94%);
+
+  --color-medical-green: hsl(152 60% 42%);
+  --color-medical-green-light: hsl(152 50% 94%);
+
+  --color-medical-purple: hsl(250 60% 55%);
+  --color-medical-purple-light: hsl(250 50% 95%);
+}
+
+/* Dark theme */
+
+.dark {
+
+  --color-background: hsl(215 30% 8%);
+  --color-foreground: hsl(210 20% 95%);
+
+  --color-card: hsl(215 30% 12%);
+  --color-card-foreground: hsl(210 20% 95%);
+
+  --color-popover: hsl(215 30% 12%);
+  --color-popover-foreground: hsl(210 20% 95%);
+
+  --color-primary: hsl(210 80% 55%);
+  --color-primary-foreground: hsl(0 0% 100%);
+
+  --color-secondary: hsl(215 25% 18%);
+  --color-secondary-foreground: hsl(210 20% 85%);
+
+  --color-muted: hsl(215 25% 18%);
+  --color-muted-foreground: hsl(215 15% 55%);
+
+  --color-accent: hsl(175 50% 45%);
+  --color-accent-foreground: hsl(0 0% 100%);
+
+  --color-destructive: hsl(0 62% 50%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+
+  --color-border: hsl(215 25% 20%);
+  --color-input: hsl(215 25% 20%);
+  --color-ring: hsl(210 80% 55%);
+}
+
+/* Base styles */
+
+@layer base {
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1,h2,h3,h4,h5,h6{
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+
+}
+
+/* Custom utilities */
+
+@layer utilities {
+
+  .gradient-hero {
+    background: linear-gradient(135deg, hsl(210 90% 45%), hsl(210 75% 30%));
+  }
+
+  .gradient-accent {
+    background: linear-gradient(135deg, hsl(175 60% 42%), hsl(210 90% 45%));
+  }
+
+  .gradient-warm {
+    background: linear-gradient(135deg, hsl(4 80% 62%), hsl(38 92% 55%));
+  }
+
+  .gradient-medical {
+    background: linear-gradient(135deg, hsl(210 80% 95%), hsl(175 50% 94%));
+  }
+
+  .shadow-card {
+    box-shadow: 0 1px 3px hsl(210 20% 50% / 0.08),
+                0 4px 12px hsl(210 20% 50% / 0.04);
+  }
+
+  .shadow-card-hover {
+    box-shadow: 0 4px 12px hsl(210 20% 50% / 0.12),
+                0 8px 24px hsl(210 20% 50% / 0.06);
+  }
+
+  .shadow-elevated {
+    box-shadow: 0 8px 30px hsl(210 20% 50% / 0.12);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(210 90% 45%), hsl(175 60% 42%));
+  }
+
+}
