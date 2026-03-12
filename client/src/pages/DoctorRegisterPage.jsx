@@ -7,226 +7,226 @@ import { toast } from "sonner";
 
 export default function DoctorRegisterPage() {
 
-const [showPassword, setShowPassword] = useState(false);
-const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-const [name, setName] = useState("");
-const [email, setEmail] = useState("");
-const [password, setPassword] = useState("");
-const [confirmPassword, setConfirmPassword] = useState("");
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
 
-const navigate = useNavigate();
+    const navigate = useNavigate();
 
-const handleSubmit = async (e) => {
+    const handleSubmit = async (e) => {
 
-    e.preventDefault();
+        e.preventDefault();
 
-    if (password !== confirmPassword) {
-        toast.error("Passwords do not match");
-        return;
-    }
-
-    try {
-
-        const res = await fetch("http://localhost:5000/api/doctors/register", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                name,
-                email,
-                password
-            })
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-            toast.error(data.message || "Registration failed");
+        if (password !== confirmPassword) {
+            toast.error("Passwords do not match");
             return;
         }
 
-        toast.success("Doctor account created successfully");
+        try {
 
-        navigate("/doctor-login");
+            const res = await fetch("http://localhost:5000/api/doctors/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    name,
+                    email,
+                    password
+                })
+            });
 
-    } catch (error) {
+            const data = await res.json();
 
-        toast.error("Server error");
+            if (!res.ok) {
+                toast.error(data.message || "Registration failed");
+                return;
+            }
 
-    }
+            toast.success("Doctor account created successfully");
 
-};
+            navigate("/doctor-login");
 
-return (
+        } catch (error) {
 
-    <div className="flex min-h-screen">
+            toast.error("Server error");
 
-        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[hsl(175,60%,42%)] to-[hsl(210,90%,45%)] items-center justify-center p-12">
+        }
 
-            <div className="text-center text-primary-foreground max-w-md">
+    };
 
-                <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-primary-foreground/15 backdrop-blur-sm mb-6">
-                    <Stethoscope className="h-8 w-8" />
-                </div>
+    return (
 
-                <h2 className="font-display text-3xl font-bold">
-                    Doctor Portal
-                </h2>
+        <div className="flex min-h-screen">
 
-                <p className="mt-4 text-primary-foreground/70 leading-relaxed">
-                    Create your Doctor account and manage appointments, schedules and patient bookings.
-                </p>
+            <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[hsl(175,60%,42%)] to-[hsl(210,90%,45%)] items-center justify-center p-12">
 
-            </div>
+                <div className="text-center text-primary-foreground max-w-md">
 
-        </div>
+                    <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-primary-foreground/15 backdrop-blur-sm mb-6">
+                        <Stethoscope className="h-8 w-8" />
+                    </div>
 
+                    <h2 className="font-display text-3xl font-bold">
+                        Doctor Portal
+                    </h2>
 
-        <div className="flex flex-1 items-center justify-center p-6">
-
-            <div className="w-full max-w-sm space-y-6">
-
-                <div className="text-center lg:text-left">
-
-                    <Link to="/" className="inline-flex items-center gap-2 mb-6">
-
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-accent">
-                            <Stethoscope className="h-4 w-4 text-primary-foreground" />
-                        </div>
-
-                        <span className="font-display text-lg font-bold text-foreground">
-                            Geeth HealthCare
-                        </span>
-
-                    </Link>
-
-                    <h1 className="font-display text-2xl font-bold text-foreground">
-                        Doctor Register
-                    </h1>
-
-                    <p className="text-sm text-muted-foreground mt-1">
-                        Create your doctor account
+                    <p className="mt-4 text-primary-foreground/70 leading-relaxed">
+                        Create your Doctor account and manage appointments, schedules and patient bookings.
                     </p>
 
                 </div>
 
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-
-                    <label className="text-sm font-medium text-foreground">
-                        Full Name
-                    </label>
-                    <Input
-                        type="text"
-                        placeholder="Doctor name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                    />
+            </div>
 
 
-                    <label className="text-sm font-medium text-foreground">
-                        Email Address
-                    </label>
-                    <Input
-                        type="email"
-                        placeholder="Email address"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                    />
+            <div className="flex flex-1 items-center justify-center p-6">
 
+                <div className="w-full max-w-sm space-y-6">
 
-                    <div className="relative">
+                    <div className="text-center lg:text-left">
 
-                        <label className="text-sm font-medium text-foreground">
-                            Password
-                        </label>
+                        <Link to="/" className="inline-flex items-center gap-2 mb-6">
 
-                        <Input
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-accent">
+                                <Stethoscope className="h-4 w-4 text-primary-foreground" />
+                            </div>
 
-                        <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                           className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
+                            <span className="font-display text-lg font-bold text-foreground">
+                                Geeth HealthCare
+                            </span>
 
-              {showPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
+                        </Link>
 
-                        </button>
+                        <h1 className="font-display text-2xl font-bold text-foreground">
+                            Doctor Register
+                        </h1>
+
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Create your doctor account
+                        </p>
 
                     </div>
 
 
-                    <div className="relative">
+                    <form onSubmit={handleSubmit} className="space-y-4">
 
                         <label className="text-sm font-medium text-foreground">
-                            Confirm Password
+                            Full Name
                         </label>
-
                         <Input
-                            type={showConfirmPassword ? "text" : "password"}
-                            placeholder="Confirm password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            type="text"
+                            placeholder="Doctor name"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
                             required
                         />
 
-                        <button
-                            type="button"
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+
+                        <label className="text-sm font-medium text-foreground">
+                            Email Address
+                        </label>
+                        <Input
+                            type="email"
+                            placeholder="Email address"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+
+
+                        <div className="relative">
+
+                            <label className="text-sm font-medium text-foreground">
+                                Password
+                            </label>
+
+                            <Input
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+
+                                {showPassword ? (
+                                    <EyeOff className="h-4 w-4" />
+                                ) : (
+                                    <Eye className="h-4 w-4" />
+                                )}
+
+                            </button>
+
+                        </div>
+
+
+                        <div className="relative">
+
+                            <label className="text-sm font-medium text-foreground">
+                                Confirm Password
+                            </label>
+
+                            <Input
+                                type={showConfirmPassword ? "text" : "password"}
+                                placeholder="Confirm password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                required
+                            />
+
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+
+                                {showConfirmPassword ? (
+                                    <EyeOff className="h-4 w-4" />
+                                ) : (
+                                    <Eye className="h-4 w-4" />
+                                )}
+
+                            </button>
+
+                        </div>
+
+
+                        <Button
+                            type="submit"
+                            className="w-full gradient-accent border-0 text-primary-foreground font-semibold"
                         >
+                            Create Doctor Account
+                        </Button>
 
-                            {showConfirmPassword ? (
-                                <EyeOff className="h-4 w-4" />
-                            ) : (
-                                <Eye className="h-4 w-4" />
-                            )}
-
-                        </button>
-
-                    </div>
+                    </form>
 
 
-                    <Button
-                        type="submit"
-                        className="w-full gradient-accent border-0 text-primary-foreground font-semibold"
-                    >
-                        Create Doctor Account
-                    </Button>
+                    <p className="text-center text-xs text-muted-foreground">
 
-                </form>
+                        Already have an account?
 
+                        <Link to="/doctor-login" className="text-primary hover:underline ml-1">
+                            Login
+                        </Link>
 
-                <p className="text-center text-xs text-muted-foreground">
+                    </p>
 
-                    Already have an account?
-
-                    <Link to="/doctor-login" className="text-primary hover:underline ml-1">
-                        Login
-                    </Link>
-
-                </p>
+                </div>
 
             </div>
 
         </div>
-
-    </div>
-);
+    );
 
 
 }

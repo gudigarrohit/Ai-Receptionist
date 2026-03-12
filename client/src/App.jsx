@@ -25,6 +25,7 @@ import AdminDoctors from "./pages/AdminDoctors";
 import AdminPatients from "./pages/AdminPatients";
  import AdminSettings from "./pages/AdminSetting";
 import DoctorRegisterPage from "./pages/DoctorRegisterPage";
+import ReceptionistRegisterPage from "./pages/ReceptionistRegisterPage";
  
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ function App() {
             <Route path="/admin/patients" element={<AdminPatients />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/doctor-register" element={<DoctorRegisterPage />} />
+            <Route path="/receptionist-register" element={<ReceptionistRegisterPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

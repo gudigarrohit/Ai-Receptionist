@@ -1,138 +1,188 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { Link, useNavigate } from "react-router-dom";
+
 import {
-    Stethoscope,
+    ClipboardList,
+    CalendarDays,
+    CheckCircle2,
+    AlertCircle,
     LogOut,
+    Search,
+    Plus,
+    Users,
+    Activity,
     Edit,
     Save,
-    X,
-    Trash2,
-    CalendarPlus
+    X
 } from "lucide-react";
 
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { toast } from "sonner";
 
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from "../components/ui/select";
+
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger
+} from "../components/ui/dialog";
+
 const fadeUp = {
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0 }
 };
 
-export default function DoctorDashboard() {
+export default function ReceptionistDashboard() {
 
     const navigate = useNavigate();
 
+    const receptionistId = localStorage.getItem("receptionistId");
+
     const [profile, setProfile] = useState({});
-    const [appointments, setAppointments] = useState([]);
-    const [editing, setEditing] = useState(false);
-    const [newLeave, setNewLeave] = useState("");
+    const [editingProfile, setEditingProfile] = useState(false);
 
-    const doctorId = localStorage.getItem("doctorId");
+    const [aptList, setAptList] = useState([]);
+    const [doctors, setDoctors] = useState([]);
 
-    /* Load doctor profile */
+    const [search, setSearch] = useState("");
+    const [cancelCount, setCancelCount] = useState(0);
+
+    const [editingId, setEditingId] = useState(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
+
+    const [form, setForm] = useState({
+        patientName: "",
+        age: "",
+        phone: "",
+        doctor: "",
+        department: "",
+        date: "",
+        time: "",
+        problem: ""
+    });
+
+    /* =========================
+       FETCH PROFILE
+    ========================= */
 
     useEffect(() => {
 
-        const fetchDoctor = async () => {
+        const fetchProfile = async () => {
 
             try {
 
-                const res = await fetch(`http://localhost:5000/api/doctors/${doctorId}`);
+                const res = await fetch(`http://localhost:5000/api/receptionist/${receptionistId}`);
 
                 const data = await res.json();
 
                 setProfile(data);
 
-            } catch (error) {
+            } catch {
 
-                console.error(error);
-                toast.error("Failed to load doctor data");
-
-            }
-
-        };
-
-        if (doctorId) fetchDoctor();
-
-    }, [doctorId]);
-
-    /* Load appointments */
-
-    useEffect(() => {
-
-        const fetchAppointments = async () => {
-
-            try {
-
-                const res = await fetch(`http://localhost:5000/api/appointments/doctor/${doctorId}`);
-
-                const data = await res.json();
-
-                setAppointments(data);
-
-            } catch (err) {
-
-                console.log(err);
+                toast.error("Failed to load profile");
 
             }
 
         };
 
-        if (doctorId) fetchAppointments();
+        if (receptionistId) fetchProfile();
 
-    }, [doctorId]);
+    }, [receptionistId]);
 
-    useEffect(() => {
+    /* =========================
+       FETCH APPOINTMENTS
+    ========================= */
 
-        const fetchAppointments = async () => {
-
-            const doctorName = profile.name;
-
-            const res = await fetch(
-                `http://localhost:5000/api/ui/appointments/doctor/${doctorName}`
-            );
-
-            const data = await res.json();
-
-            const formatted = data.map((a) => ({
-                patientName: a.name,
-                age: a.age,
-                problem: a.problem,
-                date: new Date(a.date).toLocaleDateString(),
-                time: new Date(a.date).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit"
-                })
-            }));
-
-            setAppointments(formatted);
-
-        };
-
-        if (profile?.name) {
-            fetchAppointments();
-        }
-
-    }, [profile]);
-
-    /* Save doctor profile */
-
-    const handleSave = async () => {
+    const fetchAppointments = async () => {
 
         try {
 
-            const res = await fetch(`http://localhost:5000/api/doctors/${doctorId}`, {
+            const res = await fetch("http://localhost:5000/api/ui/appointments");
 
+            const data = await res.json();
+
+            const formatted = data.map(a => {
+
+                const d = new Date(a.date);
+
+                return {
+                    id: a._id,
+                    patientName: a.name,
+                    age: a.age,
+                    phone: a.phone,
+                    doctor: a.doctor,
+                    department: a.department,
+                    date: d.toISOString().split("T")[0],
+                    time: d.toTimeString().slice(0, 5),
+                    problem: a.problem
+                };
+
+            });
+
+            setAptList(formatted);
+
+        } catch {
+
+            toast.error("Failed to load appointments");
+
+        }
+
+    };
+
+    useEffect(() => {
+        fetchAppointments();
+    }, []);
+
+    /* =========================
+       FETCH DOCTORS
+    ========================= */
+
+    useEffect(() => {
+
+        const fetchDoctors = async () => {
+
+            try {
+
+                const res = await fetch("http://localhost:5000/api/ui/doctors");
+
+                const data = await res.json();
+
+                setDoctors(data);
+
+            } catch {
+
+                toast.error("Failed to load doctors");
+
+            }
+
+        };
+
+        fetchDoctors();
+
+    }, []);
+
+    /* =========================
+       PROFILE UPDATE
+    ========================= */
+
+    const saveProfile = async () => {
+
+        try {
+
+            const res = await fetch(`http://localhost:5000/api/receptionist/${receptionistId}`, {
                 method: "PUT",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(profile)
-
             });
 
             const data = await res.json();
@@ -141,9 +191,9 @@ export default function DoctorDashboard() {
 
             toast.success("Profile updated");
 
-            setEditing(false);
+            setEditingProfile(false);
 
-        } catch (error) {
+        } catch {
 
             toast.error("Update failed");
 
@@ -151,39 +201,159 @@ export default function DoctorDashboard() {
 
     };
 
-    /* Add leave */
+    /* =========================
+       SEARCH
+    ========================= */
 
-    const addLeave = () => {
+    const filtered = aptList.filter(a =>
+        a.patientName.toLowerCase().includes(search.toLowerCase()) ||
+        a.doctor.toLowerCase().includes(search.toLowerCase())
+    );
 
-        if (!newLeave) return;
+    /* =========================
+       CREATE APPOINTMENT
+    ========================= */
 
-        setProfile({
-            ...profile,
-            leaves: [...(profile.leaves || []), newLeave]
-        });
+    const createAppointment = async () => {
 
-        setNewLeave("");
+        try {
+
+            const res = await fetch("http://localhost:5000/api/ui/appointments", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: form.patientName,
+                    age: form.age,
+                    phone: form.phone,
+                    doctor: form.doctor,
+                    department: form.department,
+                    problem: form.problem,
+                    date: new Date(`${form.date}T${form.time}`)
+                })
+            });
+
+            if (!res.ok) {
+                toast.error("Booking failed");
+                return;
+            }
+
+            toast.success("Appointment created");
+
+            fetchAppointments();
+
+        } catch {
+
+            toast.error("Server error");
+
+        }
 
     };
 
-    /* Remove leave */
+    /* =========================
+       UPDATE APPOINTMENT
+    ========================= */
 
-    const removeLeave = (index) => {
+    const updateAppointment = async () => {
 
-        const updated = [...profile.leaves];
+        try {
 
-        updated.splice(index, 1);
+            const res = await fetch(
+                `http://localhost:5000/api/ui/appointments/${editingId}`,
+                {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        name: form.patientName,
+                        age: form.age,
+                        phone: form.phone,
+                        doctor: form.doctor,
+                        department: form.department,
+                        problem: form.problem,
+                        date: new Date(`${form.date}T${form.time}`)
+                    })
+                }
+            );
 
-        setProfile({
-            ...profile,
-            leaves: updated
-        });
+            if (!res.ok) {
+                toast.error("Update failed");
+                return;
+            }
+
+            toast.success("Appointment updated");
+
+            fetchAppointments();
+
+            setEditingId(null);
+
+        } catch {
+
+            toast.error("Server error");
+
+        }
 
     };
 
-    if (!profile) {
-        return <div className="p-6">Loading...</div>;
-    }
+    /* =========================
+       SAVE
+    ========================= */
+
+    const handleSave = async () => {
+
+        if (!form.patientName || !form.phone || !form.doctor) {
+            toast.error("Fill required fields");
+            return;
+        }
+
+        if (editingId) {
+            await updateAppointment();
+        } else {
+            await createAppointment();
+        }
+
+        setForm({
+            patientName: "",
+            age: "",
+            phone: "",
+            doctor: "",
+            department: "",
+            date: "",
+            time: "",
+            problem: ""
+        });
+
+        setDialogOpen(false);
+
+    };
+
+    /* =========================
+       DELETE
+    ========================= */
+
+    const cancelAppointment = async (id) => {
+
+        try {
+
+            await fetch(`http://localhost:5000/api/ui/appointments/${id}`, {
+                method: "DELETE"
+            });
+
+            setCancelCount(prev => prev + 1);
+
+            toast.success("Appointment cancelled");
+
+            fetchAppointments();
+
+        } catch {
+
+            toast.error("Cancel failed");
+
+        }
+
+    };
+
+    /* =========================
+       UI
+    ========================= */
 
     return (
 
@@ -197,48 +367,46 @@ export default function DoctorDashboard() {
 
                     <div className="flex h-16 items-center gap-2 border-b px-4">
 
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-accent">
-                            <Stethoscope className="h-4 w-4 text-primary-foreground" />
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[hsl(250,60%,55%)]">
+
+                            <ClipboardList className="h-4 w-4 text-white" />
+
                         </div>
 
-                        <span className="font-display text-lg font-bold">
-                            Doctor Portal
-                        </span>
+                        <span className="font-bold">Reception</span>
 
                     </div>
 
                 </Link>
 
-                <div className="flex-1 p-4">
+                <nav className="flex-1 p-3 space-y-1">
 
-                    <div className="flex flex-col items-center text-center py-6">
-
-                        <div className="flex h-20 w-20 items-center justify-center rounded-2xl gradient-accent text-white font-bold text-2xl mb-3">
-
-                            {profile.name?.split(" ").map(n => n[0]).join("")}
-
-                        </div>
-
-                        <h3 className="font-semibold">{profile.name}</h3>
-
-                        <p className="text-sm text-primary">
-                            {profile.specialization || "Specialization"}
-                        </p>
-
+                    <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary text-white">
+                        <CalendarDays className="h-4 w-4" />
+                        Appointments
                     </div>
 
-                </div>
+                    <div className="flex items-center gap-3 px-3 py-2 hover:bg-secondary rounded-lg">
+                        <Users className="h-4 w-4" />
+                        Patients
+                    </div>
+
+                    <div className="flex items-center gap-3 px-3 py-2 hover:bg-secondary rounded-lg">
+                        <Activity className="h-4 w-4" />
+                        Doctors
+                    </div>
+
+                </nav>
 
                 <div className="border-t p-3">
 
                     <button
                         onClick={() => {
-                            localStorage.removeItem("doctorId");
+                            localStorage.removeItem("receptionistId");
                             toast.info("Logged out");
-                            navigate("/doctor-login");
+                            navigate("/receptionist-login");
                         }}
-                        className="flex w-full items-center gap-3 px-3 py-2 rounded-lg hover:bg-secondary"
-
+                        className="flex items-center gap-2 w-full px-3 py-2 rounded-lg hover:bg-secondary"
                     >
 
                         <LogOut className="h-4 w-4" />
@@ -252,443 +420,166 @@ export default function DoctorDashboard() {
 
             {/* Main */}
 
-            <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex flex-1 flex-col">
 
-                <header className="flex h-16 items-center justify-between border-b px-6">
+                {/* TOP NAVBAR */}
 
-                    <h1 className="text-xl font-bold">
-                        Doctor Dashboard
+                <header className="flex items-center justify-between border-b px-6 py-3">
+
+                    <h1 className="font-bold text-lg">
+                        Receptionist Dashboard
                     </h1>
+
+                    <div className="flex items-center gap-4">
+
+                        <div className="text-right">
+
+                            <p className="font-medium">
+                                {profile.name}
+                            </p>
+
+                            <p className="text-xs text-muted-foreground">
+                                {profile.email}
+                            </p>
+
+                        </div>
+
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[hsl(250,60%,55%)] text-white font-bold">
+
+                            {profile.name?.split(" ").map(n => n[0]).join("")}
+
+                        </div>
+
+                    </div>
 
                 </header>
 
-                <main className="flex-1 overflow-y-auto p-6 space-y-6">
+                <main className="flex-1 p-6 space-y-6 overflow-y-auto">
 
                     {/* Stats */}
 
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid gap-4 sm:grid-cols-3">
 
                         <motion.div variants={fadeUp} initial="hidden" animate="visible" className="p-5 border rounded-xl">
 
-                            <p className="text-sm text-muted-foreground">
-                                Experience
-                            </p>
+                            <ClipboardList className="h-5 w-5 mb-2" />
 
                             <p className="text-2xl font-bold">
-                                {profile.experience || 0} yrs
+                                {aptList.length}
+                            </p>
+
+                            <p className="text-sm text-muted-foreground">
+                                Total Appointments
                             </p>
 
                         </motion.div>
 
                         <motion.div variants={fadeUp} initial="hidden" animate="visible" className="p-5 border rounded-xl">
 
-                            <p className="text-sm text-muted-foreground">
-                                Consultation Fee
-                            </p>
+                            <CheckCircle2 className="h-5 w-5 mb-2" />
 
                             <p className="text-2xl font-bold">
-                                ₹ {profile.fee || 0}
+                                {aptList.length}
+                            </p>
+
+                            <p className="text-sm text-muted-foreground">
+                                Confirmed
+                            </p>
+
+                        </motion.div>
+
+                        <motion.div variants={fadeUp} initial="hidden" animate="visible" className="p-5 border rounded-xl">
+
+                            <AlertCircle className="h-5 w-5 mb-2" />
+
+                            <p className="text-2xl font-bold">
+                                {cancelCount}
+                            </p>
+
+                            <p className="text-sm text-muted-foreground">
+                                Cancelled
                             </p>
 
                         </motion.div>
 
                     </div>
 
-                    {/* Profile */}
+                    {/* Search */}
 
-                    <div className="rounded-xl border bg-card">
+                    <div className="flex gap-3">
 
-                        <div className="flex justify-between border-b p-5">
+                        <div className="relative flex-1 max-w-md">
 
-                            <h2 className="font-semibold">
-                                Doctor Profile
-                            </h2>
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
-                            {editing ? (
-
-                                <div className="flex gap-2">
-
-                                    <Button size="sm" variant="ghost" onClick={() => setEditing(false)}> <X className="h-4 w-4 mr-1" />
-                                        Cancel </Button>
-
-                                    <Button size="sm" onClick={handleSave}>
-                                        <Save className="h-4 w-4 mr-1" />
-                                        Save
-                                    </Button>
-
-                                </div>
-
-                            ) : (
-
-                                <Button size="sm" variant="outline" onClick={() => setEditing(true)}> <Edit className="h-4 w-4 mr-1" />
-                                    Edit </Button>
-
-                            )}
-
-                        </div>
-
-                        <div className="p-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
-                            <div>
-
-                                <label className="text-xs text-muted-foreground">
-                                    Full Name
-                                </label>
-
-                                {editing ? (
-
-                                    <Input
-                                        value={profile.name || ""}
-                                        onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                                    />
-
-                                ) : (
-
-                                    <p>{profile.name}</p>
-
-                                )}
-
-                            </div>
-
-                            <div>
-
-                                <label className="text-xs text-muted-foreground">
-                                    Specialization
-                                </label>
-
-                                {editing ? (
-
-                                    <Input
-                                        value={profile.specialization || ""}
-                                        onChange={(e) => setProfile({ ...profile, specialization: e.target.value })}
-                                    />
-
-                                ) : (
-
-                                    <p>{profile.specialization}</p>
-
-                                )}
-
-                            </div>
-
-                            <div>
-
-                                <label className="text-xs text-muted-foreground">
-                                    Experience
-                                </label>
-
-                                {editing ? (
-
-                                    <Input
-                                        type="number"
-                                        value={profile.experience || ""}
-                                        onChange={(e) => setProfile({ ...profile, experience: e.target.value })}
-                                    />
-
-                                ) : (
-
-                                    <p>{profile.experience} yrs</p>
-
-                                )}
-
-                            </div>
-
-                            <div>
-
-                                <label className="text-xs text-muted-foreground">
-                                    Consultation Fee
-                                </label>
-
-                                {editing ? (
-
-                                    <Input
-                                        type="number"
-                                        value={profile.fee || ""}
-                                        onChange={(e) => setProfile({ ...profile, fee: e.target.value })}
-                                    />
-
-                                ) : (
-
-                                    <p>₹ {profile.fee}</p>
-
-                                )}
-
-                            </div>
-                            <div>
-                                <label className="text-xs text-muted-foreground">
-                                    Duty Start
-                                </label> {editing ? (<Input type="time" value={profile.dutyStart || ""}
-                                    onChange={(e) => setProfile({ ...profile, dutyStart: e.target.value })} />)
-                                    : (<p>{profile.dutyStart}</p>)}
-                            </div>
-                            {/* Duty End */}
-
-                            <div>
-                                <label className="text-xs text-muted-foreground">
-                                    Duty End </label>
-                                {editing ? (<Input type="time" value={profile.dutyEnd || ""}
-                                    onChange={(e) => setProfile({ ...profile, dutyEnd: e.target.value })} />)
-                                    : (<p>{profile.dutyEnd}</p>)}
-                            </div>
-
-                            <div>
-                                <label className="text-xs text-muted-foreground">
-                                    Lunch Start
-                                </label> {editing ? (<Input type="time" value={profile.lunchStart || ""}
-                                    onChange={(e) => setProfile({ ...profile, lunchStart: e.target.value })} />)
-                                    : (<p>{profile.lunchStart}</p>)} </div>
-                            {/* Duty End */}
-                            <div>
-                                <label className="text-xs text-muted-foreground">
-                                    Lunch End </label>
-                                {editing ? (<Input type="time" value={profile.lunchEnd || ""}
-                                    onChange={(e) => setProfile({ ...profile, lunchEnd: e.target.value })} />)
-                                    : (<p>{profile.lunchEnd}</p>)}
-                            </div>
-                        </div>
-
-                    </div>
-
-                    {/* Sunday Slot Settings */}
-
-                    <div className="rounded-xl border bg-card">
-
-                        <div className="border-b p-5">
-
-                            <h2 className="font-semibold">
-                                Sunday Duty & Slot Settings
-                            </h2>
-
-                        </div>
-
-                        <div className="p-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-
-                            <div>
-
-                                <label className="text-xs text-muted-foreground">
-                                    Sunday Start
-                                </label>
-
-                                {editing ? (
-
-                                    <Input
-                                        type="time"
-                                        value={profile.sundayStart || ""}
-                                        onChange={(e) => setProfile({ ...profile, sundayStart: e.target.value })}
-                                    />
-
-                                ) : (
-
-                                    <p>{profile.sundayStart}</p>
-
-                                )}
-
-                            </div>
-
-                            <div>
-
-                                <label className="text-xs text-muted-foreground">
-                                    Sunday End
-                                </label>
-
-                                {editing ? (
-
-                                    <Input
-                                        type="time"
-                                        value={profile.sundayEnd || ""}
-                                        onChange={(e) => setProfile({ ...profile, sundayEnd: e.target.value })}
-                                    />
-
-                                ) : (
-
-                                    <p>{profile.sundayEnd}</p>
-
-                                )}
-
-                            </div>
-
-                            <div>
-
-                                <label className="text-xs text-muted-foreground">
-                                    Max Patients / Slot
-                                </label>
-
-                                {editing ? (
-
-                                    <Input
-                                        type="number"
-                                        value={profile.maxPatientsPerSlot || ""}
-                                        onChange={(e) => setProfile({ ...profile, maxPatientsPerSlot: e.target.value })}
-                                    />
-
-                                ) : (
-
-                                    <p>{profile.maxPatientsPerSlot}</p>
-
-                                )}
-
-                            </div>
-
-                            <div>
-                                <label className="text-xs text-muted-foreground"> Slot Duration </label>
-
-                                {editing ? (
-                                    <Input
-                                        type="number"
-                                        value={profile.slotDuration || ""}
-                                        onChange={(e) =>
-                                            setProfile({ ...profile, slotDuration: e.target.value })
-                                        }
-                                    />
-                                ) : (
-                                    <p>{profile.slotDuration} minutes</p>
-                                )}
-
-                            </div>
+                            <Input
+                                placeholder="Search patients or doctors..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="pl-9"
+                            />
 
                         </div>
 
                     </div>
 
-                    {/* Appointments */}
+                    {/* Table */}
 
-                    <div className="rounded-xl border bg-card overflow-hidden">
+                    <div className="rounded-xl border overflow-hidden">
 
-                        <div className="border-b p-5">
+                        <table className="w-full text-sm">
 
-                            <h2 className="font-semibold">
-                                My Appointments
-                            </h2>
+                            <thead>
 
-                        </div>
+                                <tr className="border-b bg-muted/50">
 
-                        <div className="overflow-x-auto">
+                                    <th className="px-4 py-3 text-left">Patient</th>
+                                    <th className="px-4 py-3 text-left">Doctor</th>
+                                    <th className="px-4 py-3 text-left">Department</th>
+                                    <th className="px-4 py-3 text-left">Phone</th>
+                                    <th className="px-4 py-3 text-left">Date</th>
+                                    <th className="px-4 py-3 text-left">Problem</th>
+                                    <th className="px-4 py-3 text-left">Actions</th>
 
-                            <table className="w-full text-sm">
+                                </tr>
 
-                                <thead>
+                            </thead>
 
-                                    <tr className="border-b bg-muted/50">
+                            <tbody>
 
-                                        <th className="px-4 py-3 text-left text-muted-foreground">
-                                            Patient
-                                        </th>
+                                {filtered.map((apt) => (
+                                    <tr key={apt.id}>
 
-                                        <th className="px-4 py-3 text-left text-muted-foreground hidden md:table-cell">
-                                            Problem
-                                        </th>
+                                        <td className="px-4 py-3">{apt.patientName}</td>
+                                        <td className="px-4 py-3">{apt.doctor}</td>
+                                        <td className="px-4 py-3">{apt.department}</td>
+                                        <td className="px-4 py-3">{apt.phone}</td>
+                                        <td className="px-4 py-3">{apt.date}</td>
+                                        <td className="px-4 py-3">{apt.problem}</td>
 
-                                        <th className="px-4 py-3 text-left text-muted-foreground">
-                                            Date
-                                        </th>
+                                        <td className="px-4 py-3 flex gap-2">
 
-                                        <th className="px-4 py-3 text-left text-muted-foreground">
-                                            Time
-                                        </th>
+                                            <Button size="sm" variant="outline">
+                                                Update
+                                            </Button>
+
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="text-red-600"
+                                                onClick={() => cancelAppointment(apt.id)}
+                                            >
+                                                Cancel
+                                            </Button>
+
+                                        </td>
 
                                     </tr>
+                                ))}
 
-                                </thead>
+                            </tbody>
 
-                                <tbody className="divide-y">
-
-                                    {appointments.map((apt, i) => (
-
-                                        <tr key={i}>
-
-                                            <td className="px-4 py-3">
-
-                                                <p className="font-medium">
-                                                    {apt.patientName}
-                                                </p>
-
-                                                <p className="text-xs text-muted-foreground">
-                                                    Age: {apt.age}
-                                                </p>
-
-                                            </td>
-
-                                            <td className="px-4 py-3 hidden md:table-cell text-xs text-muted-foreground">
-                                                {apt.problem}
-                                            </td>
-
-                                            <td className="px-4 py-3">
-                                                {apt.date}
-                                            </td>
-
-                                            <td className="px-4 py-3">
-                                                {apt.time}
-                                            </td>
-
-                                        </tr>
-
-                                    ))}
-
-                                    {appointments.length === 0 && (
-
-                                        <tr>
-
-                                            <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
-                                                No appointments found
-                                            </td>
-
-                                        </tr>
-
-                                    )}
-
-                                </tbody>
-
-                            </table>
-
-                        </div>
-
-                    </div>
-
-                    {/* Leave Section */}
-
-                    <div className="rounded-xl border bg-card">
-
-                        <div className="border-b p-5 flex items-center gap-2">
-
-                            <CalendarPlus className="h-4 w-4" />
-
-                            <h2 className="font-semibold">
-                                Doctor Leaves
-                            </h2>
-
-                        </div>
-
-                        <div className="p-5 space-y-4">
-
-                            <div className="flex gap-3">
-
-                                <Input
-                                    type="date"
-                                    value={newLeave}
-                                    onChange={(e) => setNewLeave(e.target.value)}
-                                />
-
-                                <Button onClick={addLeave}>
-                                    Add Leave
-                                </Button>
-
-                            </div>
-
-                            {profile.leaves?.map((leave, index) => (
-
-                                <div key={index} className="flex justify-between border p-3 rounded-lg">
-
-                                    <span>
-                                        {new Date(leave).toLocaleDateString()}
-                                    </span>
-
-                                    <Button size="sm" variant="ghost" onClick={() => removeLeave(index)}> <Trash2 className="h-4 w-4 text-red-500" /> </Button>
-
-                                </div>
-
-                            ))}
-
-                        </div>
+                        </table>
 
                     </div>
 
