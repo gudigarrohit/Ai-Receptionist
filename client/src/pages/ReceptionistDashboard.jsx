@@ -5,12 +5,11 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   ClipboardList,
   CalendarDays,
-  Users,
   CheckCircle2,
   AlertCircle,
   LogOut,
-  Search,Clock,
-  Plus,Phone
+  Search,
+  Plus,Phone,Clock,Users,Activity
 } from "lucide-react";
 
 import { Button } from "../components/ui/button";
@@ -35,6 +34,7 @@ import {
 
 import { toast } from "sonner";
 
+/* animation */
 const fadeUp = {
   hidden: { opacity: 0, y: 15 },
   visible: (i) => ({
@@ -54,9 +54,13 @@ export default function ReceptionistDashboard() {
 
   const [doctors, setDoctors] = useState([]);
 
-  const [departments, setDepartments] = useState([]);
+  const [cancelCount, setCancelCount] = useState(0);
 
-  const [newApt, setNewApt] = useState({
+  const [editingId, setEditingId] = useState(null);
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const [form, setForm] = useState({
     patientName: "",
     age: "",
     phone: "",
@@ -67,15 +71,13 @@ export default function ReceptionistDashboard() {
     problem: ""
   });
 
-  /* ===============================
-  FETCH DATA
-  =============================== */
+  /* =======================================
+     FETCH DATA
+  ======================================= */
 
   useEffect(() => {
-
     fetchAppointments();
     fetchDoctors();
-
   }, []);
 
   const fetchAppointments = async () => {
@@ -96,12 +98,9 @@ export default function ReceptionistDashboard() {
           age: a.age,
           phone: a.phone,
           doctor: a.doctor,
-          department: a.specialization,
-          date: d.toLocaleDateString(),
-          time: d.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit"
-          }),
+          department: a.department,
+          date: d.toISOString().split("T")[0],
+          time: d.toTimeString().slice(0, 5),
           problem: a.problem,
           status: "confirmed"
         };
@@ -113,6 +112,7 @@ export default function ReceptionistDashboard() {
     } catch (err) {
 
       console.error(err);
+      toast.error("Failed to load appointments");
 
     }
 
@@ -127,109 +127,63 @@ export default function ReceptionistDashboard() {
       const data = await res.json();
 
       setDoctors(data);
-      const specs = [...new Set(data.map(d => d.specialization))];
-
-      setDepartments(specs);
 
     } catch (err) {
 
       console.error(err);
+      toast.error("Failed to load doctors");
 
     }
 
   };
 
-
-  /* ===============================
-  SEARCH FILTER
-  =============================== */
+  /* =======================================
+     SEARCH FILTER
+  ======================================= */
 
   const filtered = aptList.filter(a =>
-
-    a.patientName?.toLowerCase().includes(search.toLowerCase()) ||
-    a.doctor?.toLowerCase().includes(search.toLowerCase())
-
+    a.patientName.toLowerCase().includes(search.toLowerCase()) ||
+    a.doctor.toLowerCase().includes(search.toLowerCase())
   );
 
-  /* ===============================
-  UPDATE STATUS
-  =============================== */
+  /* =======================================
+     CREATE APPOINTMENT
+  ======================================= */
 
-  const updateStatus = (id, status) => {
-
-    setAptList(prev =>
-      prev.map(a =>
-        a.id === id ? { ...a, status } : a
-      )
-    );
-
-    toast.success(`Appointment ${status}`);
-
-  };
-
-  /* ===============================
-  CREATE APPOINTMENT
-  =============================== */
-
-  const handleNewAppointment = async () => {
-
-    if (!newApt.patientName || !newApt.doctor || !newApt.date) {
-
-      toast.error("Please fill required fields");
-
-      return;
-
-    }
+  const createAppointment = async () => {
 
     try {
 
-      const res = await fetch("http://localhost:5000/api/appointments/book", {
+      const res = await fetch("http://localhost:5000/api/ui/appointments", {
 
         method: "POST",
 
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
 
         body: JSON.stringify({
-
-          name: newApt.patientName,
-          age: newApt.age,
-          phone: newApt.phone,
-          doctor: newApt.doctor,
-          problem: newApt.problem,
-          date: new Date(`${newApt.date}T${newApt.time}`)
-
+          name: form.patientName,
+          age: form.age,
+          phone: form.phone,
+          doctor: form.doctor,
+          department: form.department,
+          problem: form.problem,
+          date: new Date(`${form.date}T${form.time}`)
         })
 
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
 
-        toast.error(data.message || "Booking failed");
-
+        toast.error("Booking failed");
         return;
 
       }
 
-      toast.success("Appointment created successfully");
+      toast.success("Appointment created");
 
       fetchAppointments();
 
-      setNewApt({
-        patientName: "",
-        age: "",
-        phone: "",
-        doctor: "",
-        department: "",
-        date: "",
-        time: "",
-        problem: ""
-      });
-
-    } catch (err) {
+    } catch {
 
       toast.error("Server error");
 
@@ -237,9 +191,144 @@ export default function ReceptionistDashboard() {
 
   };
 
-  /* ===============================
-  UI
-  =============================== */
+  /* =======================================
+     UPDATE APPOINTMENT
+  ======================================= */
+
+  const updateAppointment = async () => {
+
+    try {
+
+      const res = await fetch(
+
+        `http://localhost:5000/api/ui/appointments/${editingId}`,
+
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+
+          body: JSON.stringify({
+            name: form.patientName,
+            age: form.age,
+            phone: form.phone,
+            doctor: form.doctor,
+            department: form.department,
+            problem: form.problem,
+            date: new Date(`${form.date}T${form.time}`)
+          })
+        }
+
+      );
+
+      if (!res.ok) {
+
+        toast.error("Update failed");
+        return;
+
+      }
+
+      toast.success("Appointment updated");
+
+      fetchAppointments();
+
+      setEditingId(null);
+
+    } catch {
+
+      toast.error("Server error");
+
+    }
+
+  };
+
+  /* =======================================
+     SAVE (CREATE / UPDATE)
+  ======================================= */
+
+  const handleSave = async () => {
+
+    if (!form.patientName || !form.phone || !form.doctor || !form.date || !form.time) {
+      toast.error("Please fill required fields");
+      return;
+    }
+
+    if (editingId) {
+
+      await updateAppointment();
+
+    } else {
+
+      await createAppointment();
+
+    }
+
+    setForm({
+      patientName: "",
+      age: "",
+      phone: "",
+      doctor: "",
+      department: "",
+      date: "",
+      time: "",
+      problem: ""
+    });
+
+    setDialogOpen(false);
+
+  };
+
+  /* =======================================
+     EDIT LOAD
+  ======================================= */
+
+  const editAppointment = (apt) => {
+
+    setEditingId(apt.id);
+
+    setForm({
+      patientName: apt.patientName,
+      age: apt.age,
+      phone: apt.phone,
+      doctor: apt.doctor,
+      department: apt.department,
+      date: apt.date,
+      time: apt.time,
+      problem: apt.problem
+    });
+
+    setDialogOpen(true);
+
+  };
+
+  /* =======================================
+     CANCEL (DELETE)
+  ======================================= */
+
+  const cancelAppointment = async (id) => {
+
+    try {
+
+      await fetch(`http://localhost:5000/api/ui/appointments/${id}`, {
+        method: "DELETE"
+      });
+
+      setCancelCount(prev => prev + 1);
+
+      toast.success("Appointment cancelled");
+
+      fetchAppointments();
+
+    } catch {
+
+      toast.error("Cancel failed");
+
+    }
+
+  };
+
+  /* =======================================
+     UI
+  ======================================= */
 
   return (
 
@@ -285,7 +374,7 @@ export default function ReceptionistDashboard() {
 
           </div>
 
-            <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer">
+          <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer">
 
             <Users className="h-4 w-4" />
 
@@ -293,25 +382,39 @@ export default function ReceptionistDashboard() {
 
           </div>
 
-            <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer">
+    <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer">
+
+            <Activity className="h-4 w-4" />
+
+            <span>Department</span>
+
+          </div>
+          <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer">
 
             <Phone className="h-4 w-4" />
 
             <span>Phone No</span>
 
           </div>
-            <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer">
+          <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer">
 
             <CalendarDays className="h-4 w-4" />
 
             <span>Date</span>
 
           </div>
-            <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer">
+          <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer">
 
             <Clock className="h-4 w-4" />
 
             <span>Time</span>
+
+          </div>
+               <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer">
+
+            <Activity className="h-4 w-4" />
+
+            <span>Problem</span>
 
           </div>
 
@@ -345,69 +448,38 @@ export default function ReceptionistDashboard() {
 
       {/* Main */}
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col">
 
-        <header className="flex h-16 items-center justify-between border-b bg-card px-6">
-
-          <h1 className="text-xl font-bold">
-            Receptionist Dashboard
-          </h1>
-
+        <header className="border-b px-6 py-4 font-bold">
+          Receptionist Dashboard
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6 space-y-6">
+        <main className="flex-1 p-6 space-y-6">
 
           {/* Stats */}
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 
             {[
-
-              {
-                label: "Total Appointments",
-                value: aptList.length,
-                icon: ClipboardList
-              },
-
-              {
-                label: "Confirmed",
-                value: aptList.filter(a => a.status === "confirmed").length,
-                icon: CheckCircle2
-              },
-
-              {
-                label: "Pending",
-                value: aptList.filter(a => a.status === "pending").length,
-                icon: AlertCircle
-              }
-
+              { label: "Total Appointments", value: aptList.length, icon: ClipboardList },
+              { label: "Confirmed", value: aptList.length, icon: CheckCircle2 },
+              { label: "Today's Cancelled Appointments", value: cancelCount, icon: AlertCircle }
             ].map((stat, i) => (
 
               <motion.div
-
                 key={stat.label}
-
                 variants={fadeUp}
-
                 initial="hidden"
-
                 animate="visible"
-
                 custom={i}
-
                 className="p-5 border rounded-xl"
-
               >
 
                 <stat.icon className="h-5 w-5 mb-2" />
 
-                <p className="text-2xl font-bold">
-                  {stat.value}
-                </p>
+                <p className="text-2xl font-bold">{stat.value}</p>
 
-                <p className="text-sm text-muted-foreground">
-                  {stat.label}
-                </p>
+                <p className="text-sm text-muted-foreground">{stat.label}</p>
 
               </motion.div>
 
@@ -415,7 +487,7 @@ export default function ReceptionistDashboard() {
 
           </div>
 
-          {/* Search + New Appointment */}
+          {/* Search + Create */}
 
           <div className="flex gap-3">
 
@@ -424,20 +496,15 @@ export default function ReceptionistDashboard() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
               <Input
-
                 placeholder="Search patients or doctors..."
-
                 value={search}
-
                 onChange={(e) => setSearch(e.target.value)}
-
                 className="pl-9"
-
               />
 
             </div>
 
-            <Dialog>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
 
               <DialogTrigger asChild>
 
@@ -454,61 +521,40 @@ export default function ReceptionistDashboard() {
               <DialogContent>
 
                 <DialogHeader>
-
-                  <DialogTitle>
-                    New Appointment
-                  </DialogTitle>
-
+                  <DialogTitle>{editingId ? "Update Appointment" : "New Appointment"}</DialogTitle>
                 </DialogHeader>
 
-                <div className="space-y-3 mt-2">
+                <div className="space-y-3">
 
                   <Input
-
                     placeholder="Patient Name"
-
-                    value={newApt.patientName}
-
-                    onChange={(e) => setNewApt({ ...newApt, patientName: e.target.value })}
-
+                    value={form.patientName}
+                    onChange={(e) => setForm({ ...form, patientName: e.target.value })}
                   />
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    placeholder="Age"
+                    type="number"
+                    value={form.age}
+                    onChange={(e) => setForm({ ...form, age: e.target.value })}
+                  />
 
-                    <Input
-
-                      placeholder="Age"
-
-                      type="number"
-
-                      value={newApt.age}
-
-                      onChange={(e) => setNewApt({ ...newApt, age: e.target.value })}
-
-                    />
-
-                    <Input
-
-                      placeholder="Phone"
-
-                      value={newApt.phone}
-
-                      onChange={(e) => setNewApt({ ...newApt, phone: e.target.value })}
-
-                    />
-
-                  </div>
+                  <Input
+                    placeholder="Phone"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  />
 
                   <Select
-                    value={newApt.doctor}
+                    value={form.doctor}
                     onValueChange={(value) => {
 
-                      const selectedDoctor = doctors.find(d => d.name === value);
+                      const doc = doctors.find(d => d.name === value);
 
-                      setNewApt({
-                        ...newApt,
+                      setForm({
+                        ...form,
                         doctor: value,
-                        department: selectedDoctor?.specialization || ""
+                        department: doc?.specialization || ""
                       });
 
                     }}
@@ -520,7 +566,7 @@ export default function ReceptionistDashboard() {
 
                     <SelectContent>
 
-                      {doctors.map((d) => (
+                      {doctors.map(d => (
                         <SelectItem key={d._id} value={d.name}>
                           {d.name}
                         </SelectItem>
@@ -530,54 +576,33 @@ export default function ReceptionistDashboard() {
 
                   </Select>
 
-                  <Input
-                    value={newApt.department}
-                    placeholder="Department"
-                    readOnly
-                  />
+                  <Input value={form.department} readOnly placeholder="Department" />
+
                   <div className="grid grid-cols-2 gap-3">
 
                     <Input
-
                       type="date"
-
-                      value={newApt.date}
-
-                      onChange={(e) => setNewApt({ ...newApt, date: e.target.value })}
-
+                      value={form.date}
+                      onChange={(e) => setForm({ ...form, date: e.target.value })}
                     />
 
                     <Input
-
                       type="time"
-
-                      value={newApt.time}
-
-                      onChange={(e) => setNewApt({ ...newApt, time: e.target.value })}
-
+                      value={form.time}
+                      onChange={(e) => setForm({ ...form, time: e.target.value })}
                     />
 
                   </div>
 
                   <Input
-
                     placeholder="Problem"
-
-                    value={newApt.problem}
-
-                    onChange={(e) => setNewApt({ ...newApt, problem: e.target.value })}
-
+                    value={form.problem}
+                    onChange={(e) => setForm({ ...form, problem: e.target.value })}
                   />
 
-                  <Button
+                  <Button onClick={handleSave} className="w-full">
 
-                    onClick={handleNewAppointment}
-
-                    className="w-full"
-
-                  >
-
-                    Create Appointment
+                    {editingId ? "Update Appointment" : "Create Appointment"}
 
                   </Button>
 
@@ -589,7 +614,7 @@ export default function ReceptionistDashboard() {
 
           </div>
 
-          {/* Appointments Table */}
+          {/* Table */}
 
           <div className="rounded-xl border overflow-hidden">
 
@@ -600,16 +625,12 @@ export default function ReceptionistDashboard() {
                 <tr className="border-b bg-muted/50">
 
                   <th className="px-4 py-3 text-left">Patient</th>
-
                   <th className="px-4 py-3 text-left">Doctor</th>
-
+                  <th className="px-4 py-3 text-left">Department</th>
                   <th className="px-4 py-3 text-left">Phone</th>
-
-                  <th className="px-4 py-3 text-left">Date</th>
-
-                  <th className="px-4 py-3 text-left">Time</th>
-
-                  <th className="px-4 py-3 text-left">Status</th>
+                  <th className="px-4 py-3 text-left">Date & Time</th>
+                  <th className="px-4 py-3 text-left">Problem</th>
+                  <th className="px-4 py-3 text-left">Actions</th>
 
                 </tr>
 
@@ -617,48 +638,50 @@ export default function ReceptionistDashboard() {
 
               <tbody>
 
-                {filtered.map((apt, i) => (
-
+                {filtered.map((apt) => (
                   <tr key={apt.id}>
 
                     <td className="px-4 py-3">
-
                       <p className="font-medium">{apt.patientName}</p>
+                      <p className="text-xs">Age: {apt.age}</p>
+                    </td>
 
-                      <p className="text-xs text-muted-foreground">
-                        Age: {apt.age}
-                      </p>
+                    <td className="px-4 py-3">{apt.doctor}</td>
 
+                    <td className="px-4 py-3">{apt.department}</td>
+
+                    <td className="px-4 py-3">{apt.phone}</td>
+
+                    <td className="px-4 py-3">
+                      {apt.date} {apt.time}
                     </td>
 
                     <td className="px-4 py-3">
-                      {apt.doctor}
+                      {apt.problem || "-"}
                     </td>
 
-                    <td className="px-4 py-3">
-                      {apt.phone}
-                    </td>
+                    <td className="px-4 py-3 flex gap-2">
 
-                    <td className="px-4 py-3">
-                      {apt.date}
-                    </td>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => editAppointment(apt)}
+                      >
+                        Update
+                      </Button>
 
-                    <td className="px-4 py-3">
-                      {apt.time}
-                    </td>
-
-                    <td className="px-4 py-3">
-
-                      <Badge>
-
-                        {apt.status}
-
-                      </Badge>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600"
+                        onClick={() => cancelAppointment(apt.id)}
+                      >
+                        Cancel
+                      </Button>
 
                     </td>
 
                   </tr>
-
                 ))}
 
               </tbody>

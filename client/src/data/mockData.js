@@ -448,12 +448,5 @@ export const appointments = [
   { id: 6, patientName: "Frank Brown", age: 40, phone: "+1-555-0106", doctor: "Dr. Priya Patel", department: "General Medicine", date: "2026-03-02", time: "03:00 PM", problem: "Annual health checkup", status: "pending" },
 ];
 
-export const stats = {
-  totalDoctors: 87,
-  totalPatients: 12450,
-  totalAppointments: 3240,
-  pendingAppointments: 156,
-  confirmedAppointments: 284,
-  todayAppointments: 42,
-};
+
 

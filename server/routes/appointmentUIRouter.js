@@ -52,7 +52,7 @@ try{
 
 const {name,age,phone,doctor,problem,date,department,description} = req.body;
 
-if(!name || !age || !phone || !doctor || !date || !department ){
+if(!name || !age || !phone || !doctor || !date || !department||!problem){
 return res.status(400).json({message:"Missing fields"});
 }
 
@@ -125,6 +125,64 @@ router.get("/appointments/doctor/:doctor", async (req, res) => {
     res.status(500).json({ message: "Server error" });
 
   }
+
+});
+
+/* ===============================
+CANCEL APPOINTMENT
+================================ */
+
+router.delete("/appointments/:id", async (req, res) => {
+
+  try {
+
+    const id = req.params.id;
+
+    const deleted = await Appointment.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({
+        message: "Appointment not found"
+      });
+    }
+
+    res.json({
+      message: "Appointment deleted successfully"
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      message: "Server error"
+    });
+
+  }
+
+});
+
+
+/* ===============================
+UPDATE APPOINTMENT
+================================ */
+router.put("/appointments/:id", async (req,res)=>{
+
+try{
+
+const appointment = await Appointment.findByIdAndUpdate(
+req.params.id,
+req.body,
+{new:true}
+);
+
+res.json(appointment);
+
+}catch(err){
+
+res.status(500).json({message:"Update failed"});
+
+}
 
 });
 

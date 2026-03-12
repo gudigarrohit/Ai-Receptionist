@@ -66,7 +66,7 @@ export default function ReceptionistLoginPage() {
           </div>
 
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
 
             <label className="text-sm font-medium text-foreground">
               Email Address
@@ -74,17 +74,19 @@ export default function ReceptionistLoginPage() {
             <Input
               type="email"
               placeholder="Email address"
+              autoComplete="off"
               defaultValue="reception@geethcare.com"
               required
             />
 
             <div className="relative">
-  <label className="text-sm font-medium text-foreground">
+              <label className="text-sm font-medium text-foreground">
                 Password
               </label>
               <Input
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
+                autoComplete="off"
                 defaultValue="reception123"
                 required
               />
