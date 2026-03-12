@@ -1,25 +1,87 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Heart, Eye, EyeOff } from "lucide-react";
+
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 
 import { toast } from "sonner";
 
 export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false);
+
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [formData, setFormData] = useState({
+    email: "",
+    password: ""
+  });
+
+  /* ===============================
+  HANDLE INPUT CHANGE
+  =============================== */
+
+  const handleChange = (e) => {
+
+    const { name, value } = e.target;
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+  };
+
+  /* ===============================
+  HANDLE LOGIN
+  =============================== */
+
+  const handleSubmit = async (e) => {
+
     e.preventDefault();
-    toast.success("Logged in as Admin");
-    navigate("/admin");
+
+    try {
+
+      const response = await fetch(
+        "http://localhost:5000/api/admin/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(formData)
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      /* Save admin session */
+
+      localStorage.setItem("adminId", data.admin._id);
+
+      toast.success("Logged in as Admin");
+
+      navigate("/admin");
+
+    } catch (error) {
+
+      toast.error(error.message || "Something went wrong");
+
+    }
+
   };
 
   return (
+
     <div className="flex min-h-screen">
 
       {/* LEFT SIDE */}
+
       <div className="hidden lg:flex lg:w-1/2 gradient-hero items-center justify-center p-12">
 
         <div className="text-center text-primary-foreground max-w-md">
@@ -38,9 +100,11 @@ export default function LoginPage() {
           </p>
 
         </div>
+
       </div>
 
       {/* RIGHT SIDE */}
+
       <div className="flex flex-1 items-center justify-center p-6">
 
         <div className="w-full max-w-sm space-y-6">
@@ -60,7 +124,7 @@ export default function LoginPage() {
             </Link>
 
             <h1 className="font-display text-2xl font-bold text-foreground">
-              Welcome Back <span className="text-primary ">Admin</span>
+              Welcome Back <span className="text-primary">Admin</span>
             </h1>
 
             <p className="text-sm text-muted-foreground mt-1">
@@ -69,34 +133,50 @@ export default function LoginPage() {
 
           </div>
 
+          {/* LOGIN FORM */}
+
           <form onSubmit={handleSubmit} className="space-y-4">
 
+            {/* EMAIL */}
 
-            <label className="text-sm font-medium text-foreground">
-              Email Address
-            </label>
-            <Input
-              type="email"
-              placeholder="Email address"
-              defaultValue="hackers@gmail.com"
-              required
-            />
+            <div>
+
+              <label className="text-sm font-medium text-foreground">
+                Email Address
+              </label>
+
+              <Input
+                type="email"
+                name="email"
+                placeholder="Enter email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+
+            </div>
+
+            {/* PASSWORD */}
 
             <div className="relative">
+
               <label className="text-sm font-medium text-foreground">
                 Password
               </label>
+
               <Input
                 type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                defaultValue="hackers1234"
+                name="password"
+                placeholder="Enter password"
+                value={formData.password}
+                onChange={handleChange}
                 required
               />
 
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-[38px] text-muted-foreground hover:text-foreground"
               >
 
                 {showPassword ? (
@@ -109,6 +189,8 @@ export default function LoginPage() {
 
             </div>
 
+            {/* LOGIN BUTTON */}
+
             <Button
               type="submit"
               className="w-full gradient-hero border-0 text-primary-foreground font-semibold"
@@ -118,15 +200,41 @@ export default function LoginPage() {
 
           </form>
 
+          {/* LINKS */}
+
           <div className="text-center space-y-2">
+
             <p className="text-xs text-muted-foreground">
-              <Link to="/doctor-login" className="text-primary hover:underline">Doctor Login</Link>
+
+              <Link
+                to="/doctor-login"
+                className="text-primary hover:underline"
+              >
+                Doctor Login
+              </Link>
+
               {" · "}
-              <Link to="/receptionist-login" className="text-primary hover:underline">Receptionist Login</Link>
+
+              <Link
+                to="/receptionist-login"
+                className="text-primary hover:underline"
+              >
+                Receptionist Login
+              </Link>
+
             </p>
+
             <p className="text-xs text-muted-foreground">
-              <Link to="/" className="text-primary hover:underline">← Back to website</Link>
+
+              <Link
+                to="/"
+                className="text-primary hover:underline"
+              >
+                ← Back to website
+              </Link>
+
             </p>
+
           </div>
 
         </div>
@@ -134,5 +242,7 @@ export default function LoginPage() {
       </div>
 
     </div>
+
   );
+
 }

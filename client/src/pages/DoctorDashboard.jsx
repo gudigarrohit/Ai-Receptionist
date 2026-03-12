@@ -28,7 +28,7 @@ export default function DoctorDashboard() {
     const [appointments, setAppointments] = useState([]);
     const [editing, setEditing] = useState(false);
     const [newLeave, setNewLeave] = useState("");
-
+    const [mobileOpen, setMobileOpen] = useState(false);
     const doctorId = localStorage.getItem("doctorId");
 
     /* Load doctor profile */
@@ -189,14 +189,24 @@ export default function DoctorDashboard() {
 
         <div className="flex h-screen bg-background">
 
+            {mobileOpen && (
+                <div
+                    className="fixed inset-0 bg-black/40 z-30 lg:hidden"
+                    onClick={() => setMobileOpen(false)}
+                />
+            )}
             {/* Sidebar */}
 
-            <aside className="hidden w-64 border-r bg-card lg:flex lg:flex-col">
-
-                <Link to="/">
-
+            <aside
+                className={`
+  fixed z-40 inset-y-0 left-0
+  w-64 bg-card border-r transition-transform duration-300
+  ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
+  lg:translate-x-0 lg:static lg:flex lg:flex-col
+`}
+            >
+                <Link to="/" onClick={() => setMobileOpen(false)}>
                     <div className="flex h-16 items-center gap-2 border-b px-4">
-
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-accent">
                             <Stethoscope className="h-4 w-4 text-primary-foreground" />
                         </div>
@@ -204,7 +214,6 @@ export default function DoctorDashboard() {
                         <span className="font-display text-lg font-bold">
                             Doctor Portal
                         </span>
-
                     </div>
 
                 </Link>
@@ -233,6 +242,8 @@ export default function DoctorDashboard() {
 
                     <button
                         onClick={() => {
+                            setMobileOpen(false);
+
                             localStorage.removeItem("doctorId");
                             toast.info("Logged out");
                             navigate("/doctor-login");
@@ -254,11 +265,48 @@ export default function DoctorDashboard() {
 
             <div className="flex flex-1 flex-col overflow-hidden">
 
-                <header className="flex h-16 items-center justify-between border-b px-6">
+                <header className="flex h-16 items-center justify-between border-b px-4 lg:px-6">
 
-                    <h1 className="text-xl font-bold">
+                    {/* Hamburger */}
+
+                    <button
+                        onClick={() => setMobileOpen(!mobileOpen)}
+                        className="rounded-lg p-2 hover:bg-secondary lg:hidden"
+                    >
+                        <Stethoscope className="h-5 w-5" />
+                    </button>
+
+                    <h1 className="text-lg font-bold">
                         Doctor Dashboard
                     </h1>
+                    <div className="flex items-center gap-4">
+
+                        <div className="flex items-center gap-4">
+
+                            <div className="text-right hidden sm:block">
+                                <p className="font-medium">{profile.name}</p>
+                                <p className="text-xs text-muted-foreground">{profile.email}</p>
+                            </div>
+
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[hsl(250,60%,55%)] text-white font-bold">
+                                {profile.name?.split(" ").map(n => n[0]).join("")}
+                            </div>
+
+                        </div>
+                        {/* Logout */}
+
+                        <button
+                            onClick={() => {
+                                setMobileOpen(false);
+                                localStorage.removeItem("doctorId");
+                                toast.info("Logged out");
+                                navigate("/doctor-login");
+                            }}
+                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+                        >
+                            <LogOut className="h-5 w-5" />
+                        </button>
+                    </div>
 
                 </header>
 

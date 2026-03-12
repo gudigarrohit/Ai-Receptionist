@@ -7,6 +7,8 @@ const doctorRouter = require("./routes/doctorRouter");
 const appointmentUIRouter = require("./routes/appointmentUIRouter");
 const doctorUiRouter = require("./routes/doctorUi Route");
 const receptionistRoute = require("./routes/receptionistRoute");
+const adminRoutes = require("./routes/adminRoute");
+
 const app = express();
 
 
@@ -49,6 +51,7 @@ app.use("/api/doctors", doctorRouter);
 app.use("/api/ui", appointmentUIRouter);
 app.use("/api/ui/doctors", doctorUiRouter);
 app.use("/api/receptionists", receptionistRoute);
+app.use("/api/admin", adminRoutes);
 
 app.use((req, res, next) => {
   console.log("INCOMING:", req.method, req.url);

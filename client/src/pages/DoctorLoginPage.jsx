@@ -202,11 +202,18 @@ return (
 
 
       {/* Register */}
-      <div className="text-center">
+      <div className="text-center space-y-2">
 
-        <Link to="/doctor-register" className="text-primary hover:underline">
-          Create a Doctor Account
-        </Link>
+         
+            <p className="text-xs text-muted-foreground">
+              Don&apos;t have an account?{" "}
+              <Link
+                to="/doctor-register"
+                className="text-primary hover:underline"
+              >
+                Register here
+              </Link>
+            </p>
 
       </div>
 

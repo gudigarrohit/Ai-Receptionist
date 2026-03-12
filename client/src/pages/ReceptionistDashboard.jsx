@@ -9,12 +9,17 @@ import {
   AlertCircle,
   LogOut,
   Search,
-  Plus,Phone,Clock,Users,Activity
+  Plus,
+  Users,
+  Activity,
+  Edit,
+  Save,
+  X
 } from "lucide-react";
 
 import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
+import { toast } from "sonner";
 
 import {
   Select,
@@ -32,9 +37,7 @@ import {
   DialogTrigger
 } from "../components/ui/dialog";
 
-import { toast } from "sonner";
-
-/* animation */
+/* Animation */
 const fadeUp = {
   hidden: { opacity: 0, y: 15 },
   visible: (i) => ({
@@ -45,19 +48,95 @@ const fadeUp = {
 };
 
 export default function ReceptionistDashboard() {
-
   const navigate = useNavigate();
+  const receptionistId = localStorage.getItem("receptionistId");
 
-  const [search, setSearch] = useState("");
+  /* ================= PROFILE ================= */
+
+  const [profile, setProfile] = useState({});
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+
+    // Redirect if user not logged in
+    if (!receptionistId) {
+      toast.error("Session expired. Please login again.");
+      navigate("/receptionist-login");
+      return;
+    }
+
+    const fetchProfile = async () => {
+
+      try {
+
+        const res = await fetch(
+          `http://localhost:5000/api/receptionists/${receptionistId}`
+        );
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch profile");
+        }
+
+        const data = await res.json();
+
+        setProfile(data);
+
+      } catch (error) {
+
+        console.error(error);
+        toast.error("Failed to load profile");
+
+      }
+
+    };
+
+    fetchProfile();
+
+  }, [receptionistId, navigate]);
+
+  const saveProfile = async () => {
+
+    try {
+
+      const res = await fetch(
+        `http://localhost:5000/api/receptionists/${receptionistId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(profile)
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Update failed");
+      }
+
+      const data = await res.json();
+
+      setProfile(data);
+
+      toast.success("Profile updated");
+
+      setEditingProfile(false);
+
+    } catch (error) {
+
+      console.error(error);
+
+      toast.error("Update failed");
+
+    }
+
+  };
+
+  /* ================= APPOINTMENTS ================= */
 
   const [aptList, setAptList] = useState([]);
-
   const [doctors, setDoctors] = useState([]);
-
+  const [search, setSearch] = useState("");
   const [cancelCount, setCancelCount] = useState(0);
-
   const [editingId, setEditingId] = useState(null);
-
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const [form, setForm] = useState({
@@ -71,25 +150,17 @@ export default function ReceptionistDashboard() {
     problem: ""
   });
 
-  /* =======================================
-     FETCH DATA
-  ======================================= */
-
   useEffect(() => {
     fetchAppointments();
     fetchDoctors();
   }, []);
 
   const fetchAppointments = async () => {
-
     try {
-
       const res = await fetch("http://localhost:5000/api/ui/appointments");
-
       const data = await res.json();
 
       const formatted = data.map((a) => {
-
         const d = new Date(a.date);
 
         return {
@@ -101,65 +172,41 @@ export default function ReceptionistDashboard() {
           department: a.department,
           date: d.toISOString().split("T")[0],
           time: d.toTimeString().slice(0, 5),
-          problem: a.problem,
-          status: "confirmed"
+          problem: a.problem
         };
-
       });
 
       setAptList(formatted);
-
-    } catch (err) {
-
-      console.error(err);
+    } catch {
       toast.error("Failed to load appointments");
-
     }
-
   };
 
   const fetchDoctors = async () => {
-
     try {
-
       const res = await fetch("http://localhost:5000/api/ui/doctors");
-
       const data = await res.json();
-
       setDoctors(data);
-
-    } catch (err) {
-
-      console.error(err);
+    } catch {
       toast.error("Failed to load doctors");
-
     }
-
   };
 
-  /* =======================================
-     SEARCH FILTER
-  ======================================= */
+  /* ================= SEARCH ================= */
 
-  const filtered = aptList.filter(a =>
-    a.patientName.toLowerCase().includes(search.toLowerCase()) ||
-    a.doctor.toLowerCase().includes(search.toLowerCase())
+  const filtered = aptList.filter(
+    (a) =>
+      a.patientName.toLowerCase().includes(search.toLowerCase()) ||
+      a.doctor.toLowerCase().includes(search.toLowerCase())
   );
 
-  /* =======================================
-     CREATE APPOINTMENT
-  ======================================= */
+  /* ================= CREATE ================= */
 
   const createAppointment = async () => {
-
     try {
-
       const res = await fetch("http://localhost:5000/api/ui/appointments", {
-
         method: "POST",
-
         headers: { "Content-Type": "application/json" },
-
         body: JSON.stringify({
           name: form.patientName,
           age: form.age,
@@ -169,44 +216,29 @@ export default function ReceptionistDashboard() {
           problem: form.problem,
           date: new Date(`${form.date}T${form.time}`)
         })
-
       });
 
       if (!res.ok) {
-
         toast.error("Booking failed");
         return;
-
       }
 
       toast.success("Appointment created");
-
       fetchAppointments();
-
     } catch {
-
       toast.error("Server error");
-
     }
-
   };
 
-  /* =======================================
-     UPDATE APPOINTMENT
-  ======================================= */
+  /* ================= UPDATE ================= */
 
   const updateAppointment = async () => {
-
     try {
-
       const res = await fetch(
-
         `http://localhost:5000/api/ui/appointments/${editingId}`,
-
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-
           body: JSON.stringify({
             name: form.patientName,
             age: form.age,
@@ -217,49 +249,33 @@ export default function ReceptionistDashboard() {
             date: new Date(`${form.date}T${form.time}`)
           })
         }
-
       );
 
       if (!res.ok) {
-
         toast.error("Update failed");
         return;
-
       }
 
       toast.success("Appointment updated");
-
       fetchAppointments();
-
       setEditingId(null);
-
     } catch {
-
       toast.error("Server error");
-
     }
-
   };
 
-  /* =======================================
-     SAVE (CREATE / UPDATE)
-  ======================================= */
+  /* ================= SAVE ================= */
 
   const handleSave = async () => {
-
-    if (!form.patientName || !form.phone || !form.doctor || !form.date || !form.time) {
-      toast.error("Please fill required fields");
+    if (!form.patientName || !form.phone || !form.doctor || !form.date) {
+      toast.error("Fill required fields");
       return;
     }
 
     if (editingId) {
-
       await updateAppointment();
-
     } else {
-
       await createAppointment();
-
     }
 
     setForm({
@@ -274,15 +290,11 @@ export default function ReceptionistDashboard() {
     });
 
     setDialogOpen(false);
-
   };
 
-  /* =======================================
-     EDIT LOAD
-  ======================================= */
+  /* ================= EDIT LOAD ================= */
 
   const editAppointment = (apt) => {
-
     setEditingId(apt.id);
 
     setForm({
@@ -297,125 +309,68 @@ export default function ReceptionistDashboard() {
     });
 
     setDialogOpen(true);
-
   };
 
-  /* =======================================
-     CANCEL (DELETE)
-  ======================================= */
+  /* ================= DELETE ================= */
 
   const cancelAppointment = async (id) => {
-
     try {
-
       await fetch(`http://localhost:5000/api/ui/appointments/${id}`, {
         method: "DELETE"
       });
 
-      setCancelCount(prev => prev + 1);
-
+      setCancelCount((prev) => prev + 1);
       toast.success("Appointment cancelled");
-
       fetchAppointments();
-
     } catch {
-
       toast.error("Cancel failed");
-
     }
-
   };
 
-  /* =======================================
-     UI
-  ======================================= */
+  /* ================= UI ================= */
 
   return (
-
     <div className="flex h-screen bg-background">
-
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-30 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
       {/* Sidebar */}
 
-      <aside className="hidden w-64 border-r bg-card lg:flex lg:flex-col">
-
-        <Link to="/">
-
+      <aside
+        className={`
+  fixed z-40 inset-y-0 left-0
+  w-64 bg-card border-r transition-transform duration-300
+  ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
+  lg:translate-x-0 lg:static lg:flex lg:flex-col
+`}
+      >
+        <Link to="/" onClick={() => setMobileOpen(false)}>
           <div className="flex h-16 items-center gap-2 border-b px-4">
-
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[hsl(250,60%,55%)]">
-
-              <ClipboardList className="h-4 w-4 text-primary-foreground" />
-
+              <ClipboardList className="h-4 w-4 text-white" />
             </div>
-
-            <span className="font-display text-lg font-bold">
-              Reception
-            </span>
-
+            <span className="font-bold">Reception</span>
           </div>
-
         </Link>
 
         <nav className="flex-1 p-3 space-y-1">
 
-          <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium bg-primary text-primary-foreground">
-
+          <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary text-white">
             <CalendarDays className="h-4 w-4" />
-
-            <span>Appointments</span>
-
+            Appointments
           </div>
 
-          <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer">
-
+          <div className="flex items-center gap-3 px-3 py-2 hover:bg-secondary rounded-lg">
             <Users className="h-4 w-4" />
-
-            <span>Patients</span>
-
+            Patients
           </div>
 
-          <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer">
-
-            <Users className="h-4 w-4" />
-
-            <span>Doctors</span>
-
-          </div>
-
-    <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer">
-
+          <div className="flex items-center gap-3 px-3 py-2 hover:bg-secondary rounded-lg">
             <Activity className="h-4 w-4" />
-
-            <span>Department</span>
-
-          </div>
-          <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer">
-
-            <Phone className="h-4 w-4" />
-
-            <span>Phone No</span>
-
-          </div>
-          <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer">
-
-            <CalendarDays className="h-4 w-4" />
-
-            <span>Date</span>
-
-          </div>
-          <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer">
-
-            <Clock className="h-4 w-4" />
-
-            <span>Time</span>
-
-          </div>
-               <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary cursor-pointer">
-
-            <Activity className="h-4 w-4" />
-
-            <span>Problem</span>
-
+            Doctors
           </div>
 
         </nav>
@@ -423,26 +378,20 @@ export default function ReceptionistDashboard() {
         <div className="border-t p-3">
 
           <button
-
             onClick={() => {
-
+              setMobileOpen(false);
+              localStorage.removeItem("receptionistId");
               toast.info("Logged out");
-
               navigate("/receptionist-login");
-
             }}
-
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary"
-
+            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg hover:bg-secondary"
           >
-
             <LogOut className="h-4 w-4" />
-
             Logout
-
           </button>
 
         </div>
+
 
       </aside>
 
@@ -450,22 +399,217 @@ export default function ReceptionistDashboard() {
 
       <div className="flex flex-1 flex-col">
 
-        <header className="border-b px-6 py-4 font-bold">
-          Receptionist Dashboard
+        {/* Navbar */}
+
+        <header className="flex items-center justify-between border-b px-4 py-3 lg:px-6">
+
+          {/* Hamburger */}
+
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="rounded-lg p-2 hover:bg-secondary lg:hidden"
+          >
+            <ClipboardList className="h-5 w-5" />
+          </button>
+
+          <h1 className="font-bold text-lg">
+            Receptionist Dashboard
+          </h1>
+
+          {/* Profile */}
+
+          <div className="flex items-center gap-8">
+
+            <div className="flex items-center gap-4">
+
+              <div className="text-right hidden sm:block">
+                <p className="font-medium">{profile.name}</p>
+                <p className="text-xs text-muted-foreground">{profile.email}</p>
+              </div>
+
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[hsl(250,60%,55%)] text-white font-bold">
+                {profile.name?.split(" ").map(n => n[0]).join("")}
+              </div>
+
+            </div>
+            {/* Logout */}
+
+            <button
+              onClick={() => {
+                setMobileOpen(false);
+                localStorage.removeItem("receptionistId");
+                toast.info("Logged out");
+                navigate("/receptionist-login");
+              }}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
+          </div>
+
         </header>
 
-        <main className="flex-1 p-6 space-y-6">
+        <main className="flex-1 p-6 space-y-6 overflow-y-auto">
+
+          {/* Profile Card */}
+
+          <div className="rounded-xl border bg-card">
+
+            <div className="flex justify-between border-b p-5">
+
+              <h2 className="font-semibold">Receptionist Profile</h2>
+
+              {editingProfile ? (
+                <div className="flex gap-2">
+                  <Button size="sm" variant="ghost" onClick={() => setEditingProfile(false)}>
+                    <X className="h-4 w-4 mr-1" /> Cancel
+                  </Button>
+
+                  <Button size="sm" onClick={saveProfile}>
+                    <Save className="h-4 w-4 mr-1" /> Save
+                  </Button>
+                </div>
+              ) : (
+                <Button size="sm" variant="outline" onClick={() => setEditingProfile(true)}>
+                  <Edit className="h-4 w-4 mr-1" /> Edit
+                </Button>
+              )}
+
+            </div>
+
+            <div className="p-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+              {/* Name */}
+
+              <div>
+                <label className="text-xs text-muted-foreground">Name</label>
+
+                {editingProfile ? (
+                  <Input
+                    value={profile.name || ""}
+                    onChange={(e) =>
+                      setProfile({ ...profile, name: e.target.value })
+                    }
+                  />
+                ) : (
+                  <p>{profile.name}</p>
+                )}
+              </div>
+
+
+              {/* Phone */}
+
+              <div>
+                <label className="text-xs text-muted-foreground">Phone</label>
+
+                {editingProfile ? (
+                  <Input
+                    value={profile.phone || ""}
+                    onChange={(e) =>
+                      setProfile({ ...profile, phone: e.target.value })
+                    }
+                  />
+                ) : (
+                  <p>{profile.phone}</p>
+                )}
+              </div>
+
+
+              {/* Address */}
+
+              <div>
+                <label className="text-xs text-muted-foreground">Address</label>
+
+                {editingProfile ? (
+                  <Input
+                    value={profile.address || ""}
+                    onChange={(e) =>
+                      setProfile({ ...profile, address: e.target.value })
+                    }
+                  />
+                ) : (
+                  <p>{profile.address}</p>
+                )}
+              </div>
+
+
+              {/* Gender */}
+
+              <div>
+                <label className="text-xs text-muted-foreground">Gender</label>
+
+                {editingProfile ? (
+
+                  <div className="flex gap-4 mt-1">
+
+                    {["Male", "Female", "Other"].map((g) => (
+
+                      <label key={g} className="flex items-center gap-1 text-sm">
+
+                        <input
+                          type="radio"
+                          name="gender"
+                          value={g}
+                          checked={profile.gender === g}
+                          onChange={(e) =>
+                            setProfile({ ...profile, gender: e.target.value })
+                          }
+                        />
+
+                        {g}
+
+                      </label>
+
+                    ))}
+
+                  </div>
+
+                ) : (
+                  <p>{profile.gender}</p>
+                )}
+              </div>
+
+
+              {/* Shift */}
+
+              <div>
+                <label className="text-xs text-muted-foreground">Shift</label>
+
+                {editingProfile ? (
+
+                  <select
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    value={profile.shift || ""}
+                    onChange={(e) =>
+                      setProfile({ ...profile, shift: e.target.value })
+                    }
+                  >
+
+                    <option value="">Select Shift</option>
+                    <option value="Morning (8AM - 2PM)">Morning (8AM - 2PM)</option>
+                    <option value="Afternoon (2PM - 8PM)">Afternoon (2PM - 8PM)</option>
+                    <option value="Night (8PM - 8AM)">Night (8PM - 8AM)</option>
+
+                  </select>
+
+                ) : (
+                  <p>{profile.shift}</p>
+                )}
+              </div>
+
+            </div>
+
+          </div>
 
           {/* Stats */}
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-3">
 
             {[
               { label: "Total Appointments", value: aptList.length, icon: ClipboardList },
               { label: "Confirmed", value: aptList.length, icon: CheckCircle2 },
-              { label: "Today's Cancelled Appointments", value: cancelCount, icon: AlertCircle }
+              { label: "Cancelled", value: cancelCount, icon: AlertCircle }
             ].map((stat, i) => (
-
               <motion.div
                 key={stat.label}
                 variants={fadeUp}
@@ -474,15 +618,10 @@ export default function ReceptionistDashboard() {
                 custom={i}
                 className="p-5 border rounded-xl"
               >
-
                 <stat.icon className="h-5 w-5 mb-2" />
-
                 <p className="text-2xl font-bold">{stat.value}</p>
-
                 <p className="text-sm text-muted-foreground">{stat.label}</p>
-
               </motion.div>
-
             ))}
 
           </div>
@@ -504,24 +643,22 @@ export default function ReceptionistDashboard() {
 
             </div>
 
+            {/* Dialog */}
+
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
 
               <DialogTrigger asChild>
-
                 <Button className="gap-2">
-
-                  <Plus className="h-4 w-4" />
-
-                  New Appointment
-
+                  <Plus className="h-4 w-4" /> New Appointment
                 </Button>
-
               </DialogTrigger>
 
               <DialogContent>
 
                 <DialogHeader>
-                  <DialogTitle>{editingId ? "Update Appointment" : "New Appointment"}</DialogTitle>
+                  <DialogTitle>
+                    {editingId ? "Update Appointment" : "New Appointment"}
+                  </DialogTitle>
                 </DialogHeader>
 
                 <div className="space-y-3">
@@ -529,34 +666,38 @@ export default function ReceptionistDashboard() {
                   <Input
                     placeholder="Patient Name"
                     value={form.patientName}
-                    onChange={(e) => setForm({ ...form, patientName: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, patientName: e.target.value })
+                    }
                   />
 
                   <Input
                     placeholder="Age"
                     type="number"
                     value={form.age}
-                    onChange={(e) => setForm({ ...form, age: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, age: e.target.value })
+                    }
                   />
 
                   <Input
                     placeholder="Phone"
                     value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, phone: e.target.value })
+                    }
                   />
 
                   <Select
                     value={form.doctor}
                     onValueChange={(value) => {
-
-                      const doc = doctors.find(d => d.name === value);
+                      const doc = doctors.find((d) => d.name === value);
 
                       setForm({
                         ...form,
                         doctor: value,
                         department: doc?.specialization || ""
                       });
-
                     }}
                   >
 
@@ -566,7 +707,7 @@ export default function ReceptionistDashboard() {
 
                     <SelectContent>
 
-                      {doctors.map(d => (
+                      {doctors.map((d) => (
                         <SelectItem key={d._id} value={d.name}>
                           {d.name}
                         </SelectItem>
@@ -583,13 +724,17 @@ export default function ReceptionistDashboard() {
                     <Input
                       type="date"
                       value={form.date}
-                      onChange={(e) => setForm({ ...form, date: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, date: e.target.value })
+                      }
                     />
 
                     <Input
                       type="time"
                       value={form.time}
-                      onChange={(e) => setForm({ ...form, time: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, time: e.target.value })
+                      }
                     />
 
                   </div>
@@ -597,13 +742,13 @@ export default function ReceptionistDashboard() {
                   <Input
                     placeholder="Problem"
                     value={form.problem}
-                    onChange={(e) => setForm({ ...form, problem: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, problem: e.target.value })
+                    }
                   />
 
                   <Button onClick={handleSave} className="w-full">
-
                     {editingId ? "Update Appointment" : "Create Appointment"}
-
                   </Button>
 
                 </div>
@@ -621,9 +766,7 @@ export default function ReceptionistDashboard() {
             <table className="w-full text-sm">
 
               <thead>
-
                 <tr className="border-b bg-muted/50">
-
                   <th className="px-4 py-3 text-left">Patient</th>
                   <th className="px-4 py-3 text-left">Doctor</th>
                   <th className="px-4 py-3 text-left">Department</th>
@@ -631,9 +774,7 @@ export default function ReceptionistDashboard() {
                   <th className="px-4 py-3 text-left">Date & Time</th>
                   <th className="px-4 py-3 text-left">Problem</th>
                   <th className="px-4 py-3 text-left">Actions</th>
-
                 </tr>
-
               </thead>
 
               <tbody>
@@ -647,18 +788,14 @@ export default function ReceptionistDashboard() {
                     </td>
 
                     <td className="px-4 py-3">{apt.doctor}</td>
-
                     <td className="px-4 py-3">{apt.department}</td>
-
                     <td className="px-4 py-3">{apt.phone}</td>
 
                     <td className="px-4 py-3">
                       {apt.date} {apt.time}
                     </td>
 
-                    <td className="px-4 py-3">
-                      {apt.problem || "-"}
-                    </td>
+                    <td className="px-4 py-3">{apt.problem || "-"}</td>
 
                     <td className="px-4 py-3 flex gap-2">
 
@@ -695,7 +832,5 @@ export default function ReceptionistDashboard() {
       </div>
 
     </div>
-
   );
-
 }

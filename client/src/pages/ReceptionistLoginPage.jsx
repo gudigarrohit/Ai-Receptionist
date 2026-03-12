@@ -44,8 +44,8 @@ const handleSubmit = async (e) => {
 
     toast.success("Logged in as Receptionist");
 
-    // optional: store login info
-    localStorage.setItem("receptionist", JSON.stringify(data.receptionist));
+    // store receptionist id
+    localStorage.setItem("receptionistId", data.receptionist._id);
 
     navigate("/receptionist/dashboard");
 

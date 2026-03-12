@@ -1,7 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const Receptionist = require("../models/receptionist");
-
+const mongoose = require("mongoose"); 
 const router = express.Router();
 
 
@@ -104,7 +104,21 @@ router.post("/login", async (req, res) => {
 
 });
 
+router.get("/", async (req, res) => {
 
+  try {
+
+    const receptionists = await Receptionist.find();
+
+    res.json(receptionists);
+
+  } catch (error) {
+
+    res.status(500).json({ message: "Server error" });
+
+  }
+
+});
 
 /* ===============================
 GET RECEPTIONIST PROFILE
@@ -145,11 +159,21 @@ router.put("/:id", async (req, res) => {
 
   try {
 
+    const id = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid receptionist ID" });
+    }
+
     const receptionist = await Receptionist.findByIdAndUpdate(
-      req.params.id,
+      id,
       req.body,
       { new: true }
     );
+
+    if (!receptionist) {
+      return res.status(404).json({ message: "Receptionist not found" });
+    }
 
     res.json(receptionist);
 
@@ -157,8 +181,44 @@ router.put("/:id", async (req, res) => {
 
     console.error(error);
 
+    res.status(500).json({ message: "Server error" });
+
+  }
+
+});
+
+
+router.delete("/:id", async (req, res) => {
+
+  try {
+
+    const id = req.params.id;
+
+    // validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "Invalid receptionist ID"
+      });
+    }
+
+    const deletedReceptionist = await Receptionist.findByIdAndDelete(id);
+
+    if (!deletedReceptionist) {
+      return res.status(404).json({
+        message: "Receptionist not found"
+      });
+    }
+
+    res.json({
+      message: "Receptionist deleted successfully"
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
     res.status(500).json({
-      message: "Update failed"
+      message: "Server error"
     });
 
   }
