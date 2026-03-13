@@ -8,6 +8,7 @@ const appointmentUIRouter = require("./routes/appointmentUIRouter");
 const doctorUiRouter = require("./routes/doctorUi Route");
 const receptionistRoute = require("./routes/receptionistRoute");
 const adminRoutes = require("./routes/adminRoute");
+const patientRoute = require("./routes/patientRoute");
 
 const app = express();
 
@@ -46,12 +47,18 @@ mongoose.connection.on("reconnected", () => {
   console.log("MongoDB reconnected!");
 });
 
+app.use((req, res, next) => {
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  res.setHeader("Cross-Origin-Embedder-Policy", "unsafe-none");
+  next();
+});
 app.use("/api/appointments", appointmentRouter);
 app.use("/api/doctors", doctorRouter);
 app.use("/api/ui", appointmentUIRouter);
 app.use("/api/ui/doctors", doctorUiRouter);
 app.use("/api/receptionists", receptionistRoute);
 app.use("/api/admin", adminRoutes);
+app.use("/api/patient", patientRoute);
 
 app.use((req, res, next) => {
   console.log("INCOMING:", req.method, req.url);

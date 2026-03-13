@@ -20,8 +20,8 @@ export default function AppointmentPage() {
 
   const [submitted, setSubmitted] = useState(false);
 
-  /* doctors from database */
   const [doctors, setDoctors] = useState([]);
+  const [departments, setDepartments] = useState([]);
 
   const [form, setForm] = useState({
     name: "",
@@ -35,8 +35,9 @@ export default function AppointmentPage() {
   });
 
   /* ===============================
-  FETCH DOCTORS FROM MONGODB
+  FETCH DOCTORS
   =============================== */
+
   useEffect(() => {
 
     const fetchDoctors = async () => {
@@ -49,8 +50,6 @@ export default function AppointmentPage() {
 
         setDoctors(data);
 
-        /* extract specialization as departments */
-
         const specs = [...new Set(data.map(d => d.specialization))];
 
         setDepartments(specs);
@@ -58,7 +57,6 @@ export default function AppointmentPage() {
       } catch (err) {
 
         console.error(err);
-
         toast.error("Failed to load doctors");
 
       }
@@ -66,6 +64,19 @@ export default function AppointmentPage() {
     };
 
     fetchDoctors();
+
+    /* ===============================
+    AUTO FILL PATIENT NAME
+    =============================== */
+
+    const patient = JSON.parse(localStorage.getItem("patient"));
+
+    if (patient) {
+      setForm((prev) => ({
+        ...prev,
+        name: patient.name
+      }));
+    }
 
   }, []);
 
@@ -92,21 +103,36 @@ const handleSubmit = async (e) => {
 
   try {
 
-    const res = await fetch("http://localhost:5000/api/ui/appointments", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        name: form.name,
-        age: form.age,
-        phone: form.phone,
-        doctor: form.doctor,
-        department: form.department,
-        problem: form.problem,
-        date: new Date(`${form.date}T${form.time}`)
-      })
-    });
+    const patient = JSON.parse(localStorage.getItem("patient"));
+
+    if(!patient){
+      toast.error("Please login first");
+      return;
+    }
+
+    const appointmentDate =
+      new Date(`${form.date}T${form.time}`).toISOString();
+
+    const res = await fetch(
+      "http://localhost:5000/api/ui/appointments",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          patient: patient._id,
+          name: form.name,
+          age: Number(form.age),
+          phone: form.phone,
+          doctor: form.doctor,
+          department: form.department,
+          problem: form.problem || "",
+          description: form.problem || "",
+          date: appointmentDate
+        })
+      }
+    );
 
     const data = await res.json();
 
@@ -115,7 +141,6 @@ const handleSubmit = async (e) => {
       return;
     }
 
-    /* clear form */
     setForm({
       name: "",
       age: "",
@@ -133,11 +158,13 @@ const handleSubmit = async (e) => {
 
   } catch (err) {
 
+    console.error(err);
     toast.error("Server error");
 
   }
 
 };
+
   /* ===============================
   SUCCESS SCREEN
   =============================== */
@@ -169,11 +196,8 @@ const handleSubmit = async (e) => {
             <Button
               onClick={() => setSubmitted(false)}
               className="mt-6 gradient-hero border-0 text-primary-foreground"
-
             >
-
               Book Another
-
             </Button>
 
           </div>
@@ -259,6 +283,7 @@ const handleSubmit = async (e) => {
 
               }}
             >
+
               <SelectTrigger>
                 <SelectValue placeholder="Select Doctor" />
               </SelectTrigger>
@@ -274,12 +299,12 @@ const handleSubmit = async (e) => {
               </SelectContent>
 
             </Select>
+
             <Input
               value={form.department}
               placeholder="Department"
               readOnly
             />
-         
 
             <div className="grid gap-5 sm:grid-cols-2">
 

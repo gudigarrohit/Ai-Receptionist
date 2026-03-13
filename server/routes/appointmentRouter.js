@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Doctor = require("../models/doctor");
 const Appointment = require("../models/Appointment");
+const Patient = require("../models/Patient");
 
 /* =====================================================
    HELPER: SEND RESPONSE TO VAPI
@@ -189,8 +190,14 @@ router.post("/book", async (req, res) => {
     if (!doctorData) {
       return sendToolResult(req, res, "Doctor not found");
     }
-
+    // find patient by email
+    const patient = await Patient.findOne({
+      $or: [
+        { email: args.email },
+      ]
+    });
     const appointment = new Appointment({
+      patient: patient ? patient._id : null,
       name: args.name,
       age: Number(args.age),
       doctor: doctorData.name,
@@ -283,5 +290,49 @@ router.post("/reschedule", async (req, res) => {
 
 });
 
+router.post("/patient-id-checker", async (req, res) => {
+
+  try {
+
+    const args = extractArgs(req) || req.body;
+
+    if (!args?.email) {
+      return sendToolResult(req, res, "Email required");
+    }
+
+    const email = args.email.toLowerCase().trim();
+
+    const patient = await Patient.findOne({
+      email: { $regex: `^${email}$`, $options: "i" }
+    });
+
+    if (!patient) {
+      return sendToolResult(req, res, "Patient not registered");
+    }
+
+    const resultString =
+      `registered=true, patientId=${patient._id}, name=${patient.name}, email=${patient.email}`;
+
+    return sendToolResult(req, res, resultString);
+
+  } catch (error) {
+
+    console.error(error);
+
+    return sendToolResult(req, res, error.message, true);
+
+  }
+
+});
+
+router.get("/patient/:id", async (req, res) => {
+
+  const appointments = await Appointment
+    .find({ patient: req.params.id })
+    .sort({ date: -1 });
+
+  res.json(appointments);
+
+});
 
 module.exports = router;

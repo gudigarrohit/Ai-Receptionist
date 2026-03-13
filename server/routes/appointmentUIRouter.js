@@ -3,6 +3,7 @@ const router = express.Router();
 
 const Doctor = require("../models/doctor");
 const Appointment = require("../models/Appointment");
+const Patient = require("../models/Patient");
 
 /* ===============================
 GET ALL DOCTORS
@@ -50,21 +51,23 @@ router.post("/appointments", async (req,res)=>{
 
 try{
 
-const {name,age,phone,doctor,problem,date,department,description} = req.body;
+const {patient,name,age,phone,doctor,problem,date,department,description} = req.body;
 
-if(!name || !age || !phone || !doctor || !date || !department||!problem){
+
+if(!name || !age || !phone || !doctor || !date || !department || !problem){
 return res.status(400).json({message:"Missing fields"});
 }
 
 const appointment = new Appointment({
-name,
-age,
-phone,
-doctor,
-problem,
-date,
-department,
-description 
+  patient: patient || null,
+  name,
+  age,
+  phone,
+  doctor,
+  problem,
+  date,
+  department,
+  description
 });
 
 await appointment.save();
@@ -181,6 +184,24 @@ res.json(appointment);
 }catch(err){
 
 res.status(500).json({message:"Update failed"});
+
+}
+
+});
+
+router.get("/appointments/patient/:id", async (req,res)=>{
+
+try{
+
+const appointments = await Appointment
+  .find({ patient:req.params.id })
+  .sort({date:-1});
+
+res.json(appointments);
+
+}catch(err){
+
+res.status(500).json({message:"Server error"});
 
 }
 

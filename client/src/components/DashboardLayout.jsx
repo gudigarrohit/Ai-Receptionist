@@ -92,7 +92,7 @@ export function DashboardLayout({ children }) {
 
           {!collapsed && (
 
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/home" className="flex items-center gap-2">
 
               <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-hero">
 
@@ -165,7 +165,7 @@ export function DashboardLayout({ children }) {
         <div className="border-t p-3">
 
           <Link
-            to="/"
+            to="/home"
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary"
           >
 
@@ -230,6 +230,21 @@ export function DashboardLayout({ children }) {
               </p>
 
             </div>
+            
+        <div className="lg:hidden">
+
+          <Link
+            to="/home"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary"
+          >
+
+            <LogOut className="h-4.5 w-4.5" />
+
+            {!collapsed }
+
+          </Link>
+
+        </div>
 
           </div>
 

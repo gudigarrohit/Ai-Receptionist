@@ -240,7 +240,7 @@ return (
 
         <p className="text-xs text-muted-foreground">
 
-          <Link to="/" className="text-primary hover:underline">
+          <Link to="/home" className="text-primary hover:underline">
             ← Back to website
           </Link>
 

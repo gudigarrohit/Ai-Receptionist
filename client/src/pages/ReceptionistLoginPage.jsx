@@ -78,7 +78,7 @@ const handleSubmit = async (e) => {
       <div className="flex flex-1 items-center justify-center p-6">
         <div className="w-full max-w-sm space-y-6">
           <div className="text-center lg:text-left">
-            <Link to="/" className="inline-flex items-center gap-2 mb-6">
+            <Link to="/home" className="inline-flex items-center gap-2 mb-6">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(250,60%,55%)]">
                 <ClipboardList className="h-4 w-4 text-primary-foreground" />
               </div>
@@ -171,7 +171,7 @@ const handleSubmit = async (e) => {
             </p>
 
             <p className="text-xs text-muted-foreground">
-              <Link to="/" className="text-primary hover:underline">
+              <Link to="/home" className="text-primary hover:underline">
                 ← Back to website
               </Link>
             </p>

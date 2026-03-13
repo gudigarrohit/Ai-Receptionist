@@ -227,7 +227,7 @@ export default function LoginPage() {
             <p className="text-xs text-muted-foreground">
 
               <Link
-                to="/"
+                to="/home"
                 className="text-primary hover:underline"
               >
                 ← Back to website

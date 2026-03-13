@@ -205,7 +205,7 @@ export default function DoctorDashboard() {
   lg:translate-x-0 lg:static lg:flex lg:flex-col
 `}
             >
-                <Link to="/" onClick={() => setMobileOpen(false)}>
+                <Link to="/home" onClick={() => setMobileOpen(false)}>
                     <div className="flex h-16 items-center gap-2 border-b px-4">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-accent">
                             <Stethoscope className="h-4 w-4 text-primary-foreground" />
@@ -281,15 +281,14 @@ export default function DoctorDashboard() {
                     </h1>
                     <div className="flex items-center gap-4">
 
-                        <div className="flex items-center gap-4">
-
+                        <div className="flex  items-center gap-2 text-center py-6 lg:hidden">
                             <div className="text-right hidden sm:block">
                                 <p className="font-medium">{profile.name}</p>
                                 <p className="text-xs text-muted-foreground">{profile.email}</p>
                             </div>
 
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[hsl(250,60%,55%)] text-white font-bold">
-                                {profile.name?.split(" ").map(n => n[0]).join("")}
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[hsl(250,60%,55%)] text-white font-bold">
+                                {profile.name?.split(" ").map(n => n[0]).join(" ").slice(0,3)}
                             </div>
 
                         </div>
@@ -302,7 +301,7 @@ export default function DoctorDashboard() {
                                 toast.info("Logged out");
                                 navigate("/doctor-login");
                             }}
-                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground lg:hidden"
                         >
                             <LogOut className="h-5 w-5" />
                         </button>

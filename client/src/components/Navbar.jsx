@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Menu, X, Phone, Heart, Clock } from "lucide-react";
+import { Menu, X, Phone, Heart, Clock,LogOut } from "lucide-react";
 import { Button } from "../components/ui/button";
 
 const navLinks = [
@@ -14,14 +14,35 @@ const navLinks = [
 ];
 
 export function Navbar() {
+
   const [isOpen, setIsOpen] = useState(false);
+  const [patient, setPatient] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+
+    const storedPatient = localStorage.getItem("patient");
+
+    if (storedPatient) {
+      setPatient(JSON.parse(storedPatient));
+    }
+
+  }, []);
+
+  const handleLogout = () => {
+
+    localStorage.removeItem("patient");
+    setPatient(null);
+    navigate("/geeth-login");
+
+  };
 
   return (
     <>
       {/* Top Bar */}
       <div className="gradient-hero">
         <div className="container mx-auto flex items-center justify-between px-4 py-2 text-sm text-primary-foreground">
-          
+
           <div className="flex items-center gap-4">
 
             <div className="flex items-center gap-1.5">
@@ -36,15 +57,63 @@ export function Navbar() {
 
           </div>
 
-          <Link to="/login">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 text-xs"
-            >
-              Staff Login
-            </Button>
-          </Link>
+          {/* Right Side Buttons */}
+          <div className="flex items-center gap-2">
+
+            {/* Staff Login FIRST */}
+            <Link to="/login">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 text-xs"
+              >
+                Staff Login
+              </Button>
+            </Link>
+
+            {patient ? (
+              <>
+                {/* Patient Dashboard */}
+                <Link to="/patient-dashboard">
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 text-xs"
+                  >
+                    {patient.name.split(" ")[0]}
+                  </Button>
+
+                </Link>
+
+                {/* Logout Icon */}
+                <Button
+                  onClick={handleLogout}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gradient-hero gap-2 rounded-[3rem]   border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 border-0 size-7 "
+                >
+                  <LogOut className="h-2.5 w-2.5" />
+                </Button>
+
+              </>
+            ) : (
+
+              <Link to="/patient-info">
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 text-xs"
+                >
+                  Patient Login
+                </Button>
+
+              </Link>
+
+            )}
+
+          </div>
 
         </div>
       </div>
@@ -55,7 +124,7 @@ export function Navbar() {
         <div className="container mx-auto flex items-center justify-between px-4 py-3">
 
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5">
+          <Link to="/home" className="flex items-center gap-2.5">
 
             <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-hero">
               <Heart className="h-5 w-5 text-primary-foreground" />
@@ -63,7 +132,7 @@ export function Navbar() {
 
             <div>
               <span className="text-xl font-bold text-foreground">
-               Geeth HealthCare
+                Geeth HealthCare
               </span>
 
               <span className="block text-[10px] uppercase tracking-wider text-muted-foreground">

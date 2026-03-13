@@ -202,33 +202,51 @@ export default function ReceptionistDashboard() {
 
   /* ================= CREATE ================= */
 
-  const createAppointment = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/api/ui/appointments", {
+const createAppointment = async () => {
+
+  try {
+
+    const appointmentDate =
+      new Date(`${form.date}T${form.time}`).toISOString();
+
+    const res = await fetch(
+      "http://localhost:5000/api/ui/appointments",
+      {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.patientName,
-          age: form.age,
+          age: Number(form.age),
           phone: form.phone,
           doctor: form.doctor,
           department: form.department,
-          problem: form.problem,
-          date: new Date(`${form.date}T${form.time}`)
+          problem: form.problem || "",
+          description: form.problem || "",
+          date: appointmentDate
         })
-      });
-
-      if (!res.ok) {
-        toast.error("Booking failed");
-        return;
       }
+    );
 
-      toast.success("Appointment created");
-      fetchAppointments();
-    } catch {
-      toast.error("Server error");
+    const data = await res.json();
+
+    if (!res.ok) {
+      toast.error(data.message || "Booking failed");
+      return;
     }
-  };
+
+    toast.success("Appointment created");
+
+    fetchAppointments();
+
+  } catch (err) {
+
+    console.error(err);
+
+    toast.error("Server error");
+
+  }
+
+};
 
   /* ================= UPDATE ================= */
 
@@ -347,7 +365,7 @@ export default function ReceptionistDashboard() {
   lg:translate-x-0 lg:static lg:flex lg:flex-col
 `}
       >
-        <Link to="/" onClick={() => setMobileOpen(false)}>
+        <Link to="/home" onClick={() => setMobileOpen(false)}>
           <div className="flex h-16 items-center gap-2 border-b px-4">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[hsl(250,60%,55%)]">
               <ClipboardList className="h-4 w-4 text-white" />
@@ -441,7 +459,7 @@ export default function ReceptionistDashboard() {
                 toast.info("Logged out");
                 navigate("/receptionist-login");
               }}
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground lg:hidden"
             >
               <LogOut className="h-5 w-5" />
             </button>

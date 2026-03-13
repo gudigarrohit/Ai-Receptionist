@@ -104,7 +104,12 @@
     font-family: 'Inter', system-ui, sans-serif;
   }
 
-  h1,h2,h3,h4,h5,h6{
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   }
 
@@ -132,12 +137,12 @@
 
   .shadow-card {
     box-shadow: 0 1px 3px hsl(210 20% 50% / 0.08),
-                0 4px 12px hsl(210 20% 50% / 0.04);
+      0 4px 12px hsl(210 20% 50% / 0.04);
   }
 
   .shadow-card-hover {
     box-shadow: 0 4px 12px hsl(210 20% 50% / 0.12),
-                0 8px 24px hsl(210 20% 50% / 0.06);
+      0 8px 24px hsl(210 20% 50% / 0.06);
   }
 
   .shadow-elevated {
@@ -150,3 +155,4 @@
   }
 
 }
+
