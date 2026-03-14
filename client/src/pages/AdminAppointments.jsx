@@ -13,27 +13,28 @@ export default function AdminAppointments() {
 
   const [search, setSearch] = useState("");
   const [aptList, setAptList] = useState([]);
-
+  const [emergencyList, setEmergencyList] = useState([]);
 
   /* =========================
-  FETCH APPOINTMENTS
+  FETCH NORMAL APPOINTMENTS
   ========================= */
-
-  useEffect(() => {
-
-    fetchAppointments();
-
-  }, []);
 
   const fetchAppointments = async () => {
 
     try {
 
-      const res = await fetch("http://localhost:5000/api/ui/appointments");
+      const res = await fetch(
+        "http://localhost:5000/api/ui/appointments"
+      );
 
       const data = await res.json();
 
-      setAptList(data);
+      const formatted = data.map((a) => ({
+        ...a,
+        emergency: false
+      }));
+
+      setAptList(formatted);
 
     } catch (err) {
 
@@ -45,10 +46,60 @@ export default function AdminAppointments() {
   };
 
   /* =========================
+  FETCH EMERGENCY APPOINTMENTS
+  ========================= */
+
+  const fetchEmergencyAppointments = async () => {
+
+    try {
+
+      const res = await fetch(
+        "http://localhost:5000/api/ui/emergency/emergency-appointments-get"
+      );
+
+      const data = await res.json();
+
+      const formatted = data.map((a) => ({
+        ...a,
+        emergency: true
+      }));
+
+      setEmergencyList(formatted);
+
+    } catch (err) {
+
+      console.error(err);
+      toast.error("Failed to load emergency appointments");
+
+    }
+
+  };
+
+  /* =========================
+  INITIAL LOAD
+  ========================= */
+
+  useEffect(() => {
+
+    fetchAppointments();
+    fetchEmergencyAppointments();
+
+  }, []);
+
+  /* =========================
+  MERGE BOTH
+  ========================= */
+
+  const mergedAppointments = [
+    ...emergencyList,
+    ...aptList
+  ];
+
+  /* =========================
   SEARCH FILTER
   ========================= */
 
-  const filtered = aptList.filter(a =>
+  const filtered = mergedAppointments.filter(a =>
 
     a.name?.toLowerCase().includes(search.toLowerCase()) ||
     a.doctor?.toLowerCase().includes(search.toLowerCase())
@@ -62,7 +113,7 @@ export default function AdminAppointments() {
   const exportCSV = () => {
 
     const headers =
-      "Patient,Age,Phone,Doctor,Specialization,Date,Time,Problem\n";
+      "Patient,Age,Phone,Doctor,Department,Date,Time,Problem,Emergency\n";
 
     const rows = filtered.map(a => {
 
@@ -75,7 +126,7 @@ export default function AdminAppointments() {
         minute: "2-digit"
       });
 
-      return `${a.name},${a.age},${a.phone},${a.doctor},${a.specialization || ""},${date},${time},"${a.problem}"`;
+      return `${a.name},${a.age},${a.phone},${a.doctor},${a.department || ""},${date},${time},"${a.problem}",${a.emergency ? "YES" : "NO"}`;
 
     }).join("\n");
 
@@ -91,7 +142,6 @@ export default function AdminAppointments() {
     toast.success("Appointments exported!");
 
   };
-
 
   return (
 
@@ -117,7 +167,6 @@ export default function AdminAppointments() {
             onClick={exportCSV}
             variant="outline"
             className="gap-2"
-
           >
 
             <Download className="h-4 w-4" />
@@ -170,69 +219,82 @@ export default function AdminAppointments() {
                     Description
                   </th>
 
-
-
                 </tr>
 
               </thead>
 
               <tbody className="divide-y">
 
-                {filtered.map((apt, i) => {
+                {filtered
+                  .sort((a, b) => (b.emergency ? 1 : 0) - (a.emergency ? 1 : 0))
+                  .map((apt, i) => {
 
-                  const dateObj = new Date(apt.date);
+                    const dateObj = new Date(apt.date);
 
-                  const date = dateObj.toLocaleDateString();
+                    const date = dateObj.toLocaleDateString();
 
-                  const time = dateObj.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit"
-                  });
+                    const time = dateObj.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    });
 
-                  return (
+                    return (
 
-                    <motion.tr
-                      key={apt._id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: i * 0.05 }}
-                      className="hover:bg-muted/30 transition-colors"
+                      <motion.tr
+                        key={apt._id || i}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: i * 0.05 }}
+                        className={
+                          apt.emergency
+                            ? "bg-red-50 hover:bg-red-100 transition-colors"
+                            : "hover:bg-muted/30 transition-colors"
+                        }
+                      >
 
-                    >
+                        <td className="px-4 py-3">
 
-                      <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
 
-                        <p className="font-medium">
-                          {apt.name}
-                        </p>
+                            <p className="font-medium">
+                              {apt.name}
+                            </p>
 
-                        <p className="text-xs text-muted-foreground">
-                          Age: {apt.age} · Phone: {apt.phone}
-                        </p>
+                            {apt.emergency && (
+                              <span className="text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded">
+                                🚨 EMERGENCY
+                              </span>
+                            )}
 
-                      </td>
+                          </div>
 
-                      <td className="px-4 py-3 hidden md:table-cell">
-                        {apt.doctor}
-                      </td>
+                          <p className="text-xs text-muted-foreground">
+                            Age: {apt.age} · Phone: {apt.phone}
+                          </p>
 
-                      <td className="px-4 py-3 hidden lg:table-cell">
-                        {apt.department || "-"}
-                      </td>
-                      <td className="px-4 py-3">
-                        {date} & {time}
-                      </td>
-                      <td className="px-4 py-3 w-1/3">
-                        {apt.description || apt.problem || "-"}
-                      </td>
+                        </td>
 
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          {apt.doctor}
+                        </td>
 
+                        <td className="px-4 py-3 hidden lg:table-cell">
+                          {apt.department || "-"}
+                        </td>
 
-                    </motion.tr>
+                        <td className="px-4 py-3">
+                          {date} & {time}
+                        </td>
 
-                  );
+                        <td className="px-4 py-3 w-1/3">
+                          {apt.description || apt.problem || "-"}
+                        </td>
 
-                })}
+                      </motion.tr>
+
+                    );
+
+                  })}
 
                 {filtered.length === 0 && (
 

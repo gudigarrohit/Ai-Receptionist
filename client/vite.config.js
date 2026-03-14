@@ -8,6 +8,6 @@ export default defineConfig({
   tailwindcss(),
   ],
   server: {
-    allowedHosts: ['think-pixels-room-indoor.trycloudflare.com']
+    allowedHosts: ["became-releases-beans-aids.trycloudflare.com", 'localhost']
   }
 })

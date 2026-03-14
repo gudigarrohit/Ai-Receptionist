@@ -30,6 +30,48 @@ export default function DoctorDashboard() {
     const [newLeave, setNewLeave] = useState("");
     const [mobileOpen, setMobileOpen] = useState(false);
     const doctorId = localStorage.getItem("doctorId");
+    const [emergencyList, setEmergencyList] = useState([]);
+
+    const fetchEmergencyAppointments = async () => {
+
+    try {
+
+        const res = await fetch(
+            "http://localhost:5000/api/ui/emergency/emergency-appointments-get"
+        );
+
+        const data = await res.json();
+
+        const formatted = data.map((a) => ({
+            patientName: a.name,
+            age: a.age || "-",
+            problem: a.problem,
+            emergency: true,
+            doctor: a.doctor,
+            date: new Date(a.date).toLocaleDateString(),
+            time: new Date(a.date).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit"
+            })
+        }));
+
+        setEmergencyList(formatted);
+
+    } catch {
+
+        toast.error("Failed to load emergency appointments");
+
+    }
+
+};
+
+
+    useEffect(() => {
+
+        fetchEmergencyAppointments();
+
+    }, []);
+
 
     /* Load doctor profile */
 
@@ -83,6 +125,8 @@ export default function DoctorDashboard() {
         if (doctorId) fetchAppointments();
 
     }, [doctorId]);
+
+    
 
     useEffect(() => {
 
@@ -184,6 +228,29 @@ export default function DoctorDashboard() {
     if (!profile) {
         return <div className="p-6">Loading...</div>;
     }
+
+    useEffect(() => {
+
+        if (!profile?.name) return;
+
+        const doctorEmergency = emergencyList
+            .filter((e) => e.doctor === profile.name)
+            .map((a) => ({
+                patientName: a.name,
+                age: a.age || "-",
+                problem: a.problem,
+                emergency: true,
+                date: new Date(a.date).toLocaleDateString(),
+                time: new Date(a.date).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                })
+            }));
+
+        setAppointments((prev) => [...doctorEmergency, ...prev]);
+
+    }, [emergencyList, profile]);
+
 
     return (
 
@@ -288,7 +355,7 @@ export default function DoctorDashboard() {
                             </div>
 
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[hsl(250,60%,55%)] text-white font-bold">
-                                {profile.name?.split(" ").map(n => n[0]).join(" ").slice(0,3)}
+                                {profile.name?.split(" ").map(n => n[0]).join(" ").slice(0, 3)}
                             </div>
 
                         </div>
@@ -601,11 +668,15 @@ export default function DoctorDashboard() {
 
                     <div className="rounded-xl border bg-card overflow-hidden">
 
-                        <div className="border-b p-5">
+                        <div className="border-b p-5 flex items-center justify-between">
 
                             <h2 className="font-semibold">
                                 My Appointments
                             </h2>
+
+                            <span className="text-xs text-muted-foreground">
+                                {appointments.length} records
+                            </span>
 
                         </div>
 
@@ -641,22 +712,39 @@ export default function DoctorDashboard() {
 
                                     {appointments.map((apt, i) => (
 
-                                        <tr key={i}>
+                                        <tr
+                                            key={apt.id || i}
+                                            className={apt.emergency ? "bg-red-50 hover:bg-red-100" : "hover:bg-muted/40"}
+                                        >
 
                                             <td className="px-4 py-3">
 
-                                                <p className="font-medium">
-                                                    {apt.patientName}
-                                                </p>
+                                                <div className="flex flex-col">
 
-                                                <p className="text-xs text-muted-foreground">
-                                                    Age: {apt.age}
-                                                </p>
+                                                    <div className="flex items-center gap-2">
+
+                                                        <p className="font-medium">
+                                                            {apt.patientName}
+                                                        </p>
+
+                                                        {apt.emergency && (
+                                                            <span className="text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded">
+                                                                🚨 EMERGENCY
+                                                            </span>
+                                                        )}
+
+                                                    </div>
+
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Age: {apt.age}
+                                                    </p>
+
+                                                </div>
 
                                             </td>
 
                                             <td className="px-4 py-3 hidden md:table-cell text-xs text-muted-foreground">
-                                                {apt.problem}
+                                                {apt.problem || "-"}
                                             </td>
 
                                             <td className="px-4 py-3">
@@ -675,8 +763,13 @@ export default function DoctorDashboard() {
 
                                         <tr>
 
-                                            <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
+                                            <td
+                                                colSpan={4}
+                                                className="px-4 py-10 text-center text-muted-foreground"
+                                            >
+
                                                 No appointments found
+
                                             </td>
 
                                         </tr>
@@ -690,6 +783,7 @@ export default function DoctorDashboard() {
                         </div>
 
                     </div>
+
 
                     {/* Leave Section */}
 

@@ -28,26 +28,28 @@ export default function AdminPatients() {
 
   const [search, setSearch] = useState("");
   const [patients, setPatients] = useState([]);
+  const [emergencyPatients, setEmergencyPatients] = useState([]);
 
   /* =========================
-  FETCH PATIENT DATA
+  FETCH NORMAL APPOINTMENTS
   ========================= */
-
-  useEffect(() => {
-
-    fetchPatients();
-
-  }, []);
 
   const fetchPatients = async () => {
 
     try {
 
-      const res = await fetch("http://localhost:5000/api/ui/appointments");
+      const res = await fetch(
+        "http://localhost:5000/api/ui/appointments"
+      );
 
       const data = await res.json();
 
-      setPatients(data);
+      const formatted = data.map((p) => ({
+        ...p,
+        emergency: false
+      }));
+
+      setPatients(formatted);
 
     } catch (err) {
 
@@ -58,10 +60,59 @@ export default function AdminPatients() {
   };
 
   /* =========================
+  FETCH EMERGENCY APPOINTMENTS
+  ========================= */
+
+  const fetchEmergencyPatients = async () => {
+
+    try {
+
+      const res = await fetch(
+        "http://localhost:5000/api/ui/emergency/emergency-appointments-get"
+      );
+
+      const data = await res.json();
+
+      const formatted = data.map((p) => ({
+        ...p,
+        emergency: true
+      }));
+
+      setEmergencyPatients(formatted);
+
+    } catch (err) {
+
+      console.error(err);
+
+    }
+
+  };
+
+  /* =========================
+  INITIAL LOAD
+  ========================= */
+
+  useEffect(() => {
+
+    fetchPatients();
+    fetchEmergencyPatients();
+
+  }, []);
+
+  /* =========================
+  MERGE BOTH
+  ========================= */
+
+  const mergedPatients = [
+    ...emergencyPatients,
+    ...patients
+  ];
+
+  /* =========================
   SEARCH FILTER
   ========================= */
 
-  const filtered = patients.filter(p =>
+  const filtered = mergedPatients.filter(p =>
 
     p.name?.toLowerCase().includes(search.toLowerCase()) ||
     p.phone?.includes(search) ||
@@ -116,7 +167,12 @@ export default function AdminPatients() {
 
               <TableRow>
 
-                <TableHead>Patient</TableHead> <TableHead>Age</TableHead> <TableHead>Phone</TableHead> <TableHead>Department</TableHead> <TableHead>Doctor</TableHead> <TableHead>Actions</TableHead>
+                <TableHead>Patient</TableHead>
+                <TableHead>Age</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Doctor</TableHead>
+                <TableHead>Actions</TableHead>
 
               </TableRow>
 
@@ -124,12 +180,33 @@ export default function AdminPatients() {
 
             <TableBody>
 
-              {filtered.map((patient) => (
+              {filtered
+                .sort((a, b) => (b.emergency ? 1 : 0) - (a.emergency ? 1 : 0))
+                .map((patient) => (
 
-                <TableRow key={patient._id}>
+                <TableRow
+                  key={patient._id}
+                  className={
+                    patient.emergency
+                      ? "bg-red-50 hover:bg-red-100"
+                      : ""
+                  }
+                >
 
                   <TableCell className="font-medium text-foreground">
-                    {patient.name}
+
+                    <div className="flex items-center gap-2">
+
+                      {patient.name}
+
+                      {patient.emergency && (
+                        <Badge className="bg-red-100 text-red-600 text-[10px]">
+                          🚨 Emergency
+                        </Badge>
+                      )}
+
+                    </div>
+
                   </TableCell>
 
                   <TableCell>

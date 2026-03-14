@@ -14,7 +14,10 @@ const AppointmentSchema = new mongoose.Schema({
   problem: String,
   date: Date,
   phone: String,
-  
+    emergency: {
+    type: Boolean,
+    default: false
+  },
   description: String
 }, { timestamps: true });
 

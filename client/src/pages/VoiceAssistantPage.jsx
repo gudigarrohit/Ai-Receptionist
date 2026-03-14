@@ -88,7 +88,7 @@ export default function VoiceAssistantPage() {
   const startCall = async () => {
     try {
       setStatus("Connecting...");
-      await vapiRef.current.start("b26be950-877f-468e-891c-ddb449f59f95");
+      await vapiRef.current.start("075598b0-ca19-4c00-90fb-c50e3bb31134");
     } catch (err) {
       console.error(err);
       setStatus("Failed to start call");

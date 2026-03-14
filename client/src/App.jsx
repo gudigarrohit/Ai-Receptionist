@@ -71,6 +71,7 @@ function App() {
               <Route path="/admin/receptionists" element={<AdminReceptionists />} />
               <Route path="/patient-dashboard" element={<PatientDashboard />} />
               <Route path="/patient-info" element={<PatientPage />} />
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

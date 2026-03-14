@@ -9,6 +9,8 @@ const doctorUiRouter = require("./routes/doctorUi Route");
 const receptionistRoute = require("./routes/receptionistRoute");
 const adminRoutes = require("./routes/adminRoute");
 const patientRoute = require("./routes/patientRoute");
+const emergencyRoutes = require("./routes/emergency");
+
 
 const app = express();
 
@@ -59,6 +61,7 @@ app.use("/api/ui/doctors", doctorUiRouter);
 app.use("/api/receptionists", receptionistRoute);
 app.use("/api/admin", adminRoutes);
 app.use("/api/patient", patientRoute);
+app.use("/api/ui/emergency", emergencyRoutes);
 
 app.use((req, res, next) => {
   console.log("INCOMING:", req.method, req.url);

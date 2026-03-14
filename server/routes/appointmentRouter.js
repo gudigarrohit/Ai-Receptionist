@@ -290,40 +290,8 @@ router.post("/reschedule", async (req, res) => {
 
 });
 
-router.post("/patient-id-checker", async (req, res) => {
 
-  try {
 
-    const args = extractArgs(req) || req.body;
-
-    if (!args?.email) {
-      return sendToolResult(req, res, "Email required");
-    }
-
-    const email = args.email.toLowerCase().trim();
-
-    const patient = await Patient.findOne({
-      email: { $regex: `^${email}$`, $options: "i" }
-    });
-
-    if (!patient) {
-      return sendToolResult(req, res, "Patient not registered");
-    }
-
-    const resultString =
-      `registered=true, patientId=${patient._id}, name=${patient.name}, email=${patient.email}`;
-
-    return sendToolResult(req, res, resultString);
-
-  } catch (error) {
-
-    console.error(error);
-
-    return sendToolResult(req, res, error.message, true);
-
-  }
-
-});
 
 router.get("/patient/:id", async (req, res) => {
 

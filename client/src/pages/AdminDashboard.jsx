@@ -7,9 +7,6 @@ import {
   CalendarDays,
   Stethoscope,
   Clock,
-  TrendingUp,
-  CheckCircle2,
-  AlertCircle,
   ArrowUpRight
 } from "lucide-react";
 
@@ -27,19 +24,21 @@ const fadeUp = {
 export default function AdminDashboard() {
 
   const [appointments, setAppointments] = useState([]);
+  const [emergencyAppointments, setEmergencyAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
+
   const [stats, setStats] = useState({
     totalPatients: 0,
     totalDoctors: 0,
     totalAppointments: 0,
-    todayAppointments: 0
+    todayAppointments: 0,
+    emergencyCount: 0
   });
 
   useEffect(() => {
-
     fetchDoctors();
     fetchAppointments();
-
+    fetchEmergencyAppointments();
   }, []);
 
   /* ===========================
@@ -47,14 +46,35 @@ export default function AdminDashboard() {
   =========================== */
 
   const fetchDoctors = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/ui/doctors");
+      const data = await res.json();
+      setDoctors(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  /* ===========================
+  FETCH NORMAL APPOINTMENTS
+  =========================== */
+
+  const fetchAppointments = async () => {
 
     try {
 
-      const res = await fetch("http://localhost:5000/api/ui/doctors");
+      const res = await fetch(
+        "http://localhost:5000/api/ui/appointments"
+      );
 
       const data = await res.json();
 
-      setDoctors(data);
+      const formatted = data.map((a) => ({
+        ...a,
+        emergency: false
+      }));
+
+      setAppointments(formatted);
 
     } catch (err) {
 
@@ -65,31 +85,25 @@ export default function AdminDashboard() {
   };
 
   /* ===========================
-  FETCH APPOINTMENTS
+  FETCH EMERGENCY APPOINTMENTS
   =========================== */
 
-  const fetchAppointments = async () => {
+  const fetchEmergencyAppointments = async () => {
 
     try {
 
-      const res = await fetch("http://localhost:5000/api/ui/appointments");
+      const res = await fetch(
+        "http://localhost:5000/api/ui/emergency/emergency-appointments-get"
+      );
 
       const data = await res.json();
 
-      setAppointments(data);
+      const formatted = data.map((a) => ({
+        ...a,
+        emergency: true
+      }));
 
-      const today = new Date().toDateString();
-
-      const todayCount = data.filter(
-        (a) => new Date(a.date).toDateString() === today
-      ).length;
-
-      setStats({
-        totalPatients: data.length,
-        totalDoctors: doctors.length,
-        totalAppointments: data.length,
-        todayAppointments: todayCount
-      });
+      setEmergencyAppointments(formatted);
 
     } catch (err) {
 
@@ -98,6 +112,49 @@ export default function AdminDashboard() {
     }
 
   };
+
+  /* ===========================
+  UPDATE STATS WHEN DATA CHANGES
+  =========================== */
+
+  useEffect(() => {
+
+    const merged = [...appointments, ...emergencyAppointments];
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    const todayCount = merged.filter(a => {
+
+      const d = new Date(a.date);
+
+      return d >= today && d < tomorrow;
+
+    }).length;
+
+    setStats({
+
+      totalPatients: merged.length,
+      totalDoctors: doctors.length,
+      totalAppointments: merged.length,
+      todayAppointments: todayCount,
+      emergencyCount: emergencyAppointments.length
+
+    });
+
+  }, [appointments, emergencyAppointments, doctors]);
+
+  /* ===========================
+  MERGE APPOINTMENTS
+  =========================== */
+
+  const mergedAppointments = [
+    ...emergencyAppointments,
+    ...appointments
+  ];
 
   return (
 
@@ -118,10 +175,10 @@ export default function AdminDashboard() {
         </div>
 
         {/* ======================
-STAT CARDS
-====================== */}
+        STAT CARDS
+        ====================== */}
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
 
           {[
             {
@@ -132,7 +189,7 @@ STAT CARDS
 
             {
               label: "Total Doctors",
-              value: doctors.length,
+              value: stats.totalDoctors,
               icon: Stethoscope
             },
 
@@ -146,6 +203,12 @@ STAT CARDS
               label: "Today's Appointments",
               value: stats.todayAppointments,
               icon: Clock
+            },
+
+            {
+              label: "Emergency Cases",
+              value: stats.emergencyCount,
+              icon: Clock
             }
 
           ].map((stat, i) => (
@@ -157,7 +220,6 @@ STAT CARDS
               variants={fadeUp}
               custom={i}
               className="rounded-xl border bg-card p-5 shadow-card"
-
             >
 
               <div className="flex items-start justify-between">
@@ -182,11 +244,15 @@ STAT CARDS
 
         </div>
 
+        {/* ======================
+        MAIN GRID
+        ====================== */}
+
         <div className="grid gap-6 lg:grid-cols-3">
 
           {/* ======================
-RECENT APPOINTMENTS
-====================== */}
+          RECENT APPOINTMENTS
+          ====================== */}
 
           <div className="lg:col-span-2 rounded-xl border bg-card shadow-card">
 
@@ -197,18 +263,25 @@ RECENT APPOINTMENTS
               </h2>
 
               <Badge variant="secondary" className="text-xs">
-                {appointments.length} total
+                {mergedAppointments.length} total
               </Badge>
 
             </div>
 
             <div className="divide-y">
 
-              {appointments.slice(0, 5).map((apt) => (
+              {mergedAppointments
+                .sort((a, b) => (b.emergency ? 1 : 0) - (a.emergency ? 1 : 0))
+                .slice(0, 5)
+                .map((apt) => (
 
                 <div
                   key={apt._id}
-                  className="flex items-center justify-between p-4 hover:bg-muted/50"
+                  className={
+                    apt.emergency
+                      ? "flex items-center justify-between p-4 bg-red-50 hover:bg-red-100"
+                      : "flex items-center justify-between p-4 hover:bg-muted/50"
+                  }
                 >
 
                   <div className="flex items-center gap-3">
@@ -224,9 +297,19 @@ RECENT APPOINTMENTS
 
                     <div>
 
-                      <p className="text-sm font-medium text-foreground">
-                        {apt.name}
-                      </p>
+                      <div className="flex items-center gap-2">
+
+                        <p className="text-sm font-medium text-foreground">
+                          {apt.name}
+                        </p>
+
+                        {apt.emergency && (
+                          <Badge className="bg-red-100 text-red-600 text-[10px]">
+                            🚨 Emergency
+                          </Badge>
+                        )}
+
+                      </div>
 
                       <p className="text-xs text-muted-foreground">
                         {apt.doctor}
@@ -237,10 +320,11 @@ RECENT APPOINTMENTS
                   </div>
 
                   <div className="text-right">
+
                     <p className="text-xs text-muted-foreground">
 
                       {new Date(apt.date).toLocaleDateString()}
-                      {"  at  "}
+                      {" at "}
                       {new Date(apt.date).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit"
@@ -259,8 +343,8 @@ RECENT APPOINTMENTS
           </div>
 
           {/* ======================
-TOP DOCTORS
-====================== */}
+          TOP DOCTORS
+          ====================== */}
 
           <div className="space-y-6">
 
