@@ -3,6 +3,58 @@ const router = express.Router();
 
 const Appointment = require("../models/Appointment");
 
+function sendToolResult(req, res, text, isError = false) {
+
+  const toolCallId =
+    req.body?.message?.toolCalls?.[0]?.id ||
+    req.body?.toolCallId ||
+    "call_1";
+
+  return res.json({
+    results: [
+      isError
+        ? { toolCallId, error: text }
+        : { toolCallId, result: text }
+    ]
+  });
+}
+
+/* =====================================================
+   HELPER: EXTRACT TOOL ARGUMENTS
+===================================================== */
+function extractArgs(req) {
+
+  if (req.body && typeof req.body === "object" && Object.keys(req.body).length > 0) {
+    if (!req.body.message) return req.body;
+  }
+
+  const message = req.body?.message;
+  if (!message) return null;
+
+  const toolCall =
+    message.toolCalls?.[0] ||
+    message.toolCallList?.[0] ||
+    message.toolWithToolCallList?.[0];
+
+  if (!toolCall) return null;
+
+  let args =
+    toolCall.function?.arguments ||
+    toolCall.arguments;
+
+  if (!args) return null;
+
+  if (typeof args === "string") {
+    try {
+      args = JSON.parse(args);
+    } catch (err) {
+      console.error("JSON parse failed:", err);
+      return null;
+    }
+  }
+
+  return args;
+}
 router.post("/emergency-appointment", async (req, res) => {
 
   try {
@@ -15,9 +67,8 @@ router.post("/emergency-appointment", async (req, res) => {
     const { name, problem, doctor, department, date } = args;
 
     if (!name || !problem || !doctor || !department || !date) {
-      return res.status(400).json({
-        message: "Missing required emergency appointment fields"
-      });
+    return sendToolResult(req, res, "Missing required emergency appointment fields");
+      
     }
 
     const appointment = new Appointment({
@@ -31,21 +82,16 @@ router.post("/emergency-appointment", async (req, res) => {
     });
 
     await appointment.save();
-
-    return res.json({
-      message: "Emergency appointment booked successfully",
-      appointment
-    });
+  return sendToolResult(req, res, "Emergency appointment booked successfully");
 
   } catch (error) {
 
-    console.error("Emergency booking error:", error);
-
-    res.status(500).json({
-      message: "Server error"
-    });
+      return sendToolResult(req, res,"Emergency booking error:" + error.message, true);
 
   }
+
+
+  
 
 });
 
